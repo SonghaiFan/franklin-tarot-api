@@ -1,38 +1,25 @@
-# Franklin deployment
+# Deployment
 
-The API is deployed to the `franklin-tarot-api` Vercel project. Developer documentation is published by GitHub Pages from this repository. The user-facing app and plugin adapter live in `SonghaiFan/frankie-tarot`.
+One repository, one Vercel project (`franklin-tarot-api`), one public origin: `https://tarot-api.songhai.site`.
 
-## Build and verify
+- `/`: developer documentation and live examples.
+- `/api/v1/*`: REST API.
+- `/mcp/agent`: Agent MCP.
+- `/openapi.json`, `/health`, `/images/*`: schema, health and artwork.
+
+`npm run build` builds docs into `dist/`, copies public assets and bundles the server into `.server/`. `vercel.json` is the only deployment configuration. GitHub Actions checks the project; Vercel deploys main. There is no GitHub Pages deployment or packaged parallel release path.
 
 ```sh
 npm ci
 npm run api:test
 npm run typecheck
-npm run api:package
-```
-
-The generated `.api-deploy/` includes three bundled functions, OpenAPI and 234 WebP images. It does not contain the docs UI, credentials or an npm runtime install. After linking that generated directory to the API project, use an explicit local config:
-
-```sh
-cd .api-deploy
-vercel project inspect --non-interactive
-vercel deploy . --local-config ./vercel.json --prod --skip-domain --yes --no-wait
-```
-
-Verify the Ready deployment before promoting it. From the repository:
-
-```sh
+npm run build
+vercel deploy --prod --skip-domain --yes
 node scripts/api-smoke.mjs https://DEPLOYMENT.vercel.app --vercel
 vercel promote https://DEPLOYMENT.vercel.app --yes
 node scripts/api-smoke.mjs https://tarot-api.songhai.site
 ```
 
-The last check is ordinary unauthenticated HTTP: passing through a signed-in CLI alone does not prove public availability.
+Test the documentation homepage and API on the same deployment. Production acceptance uses unauthenticated HTTP; signed-in CLI checks alone do not prove public access.
 
-Git deployments use the root `vercel.json`, which bundles service code into `.server/` and serves only API functions and `public/`. The GitHub Pages workflow builds docs separately, with `/franklin-tarot-api/` as its base path. API runtime code does not load React or plugin resources.
-
-## Compatibility
-
-The dataset was moved byte-for-byte from the previous application repository. Its dataset hash and draw algorithm version are unchanged, so existing v1 snapshots can still be validated. The previous API hostname is retained as a compatibility alias. New consumers should use the Franklin origin.
-
-A real ChatGPT connection refresh remains a host-side acceptance step after plugin deployments. Protocol tests and the local AppBridge preview do not constitute verification in the actual ChatGPT host.
+Domain ownership and DNS remain in Cloudflare. A hosting migration binds this same hostname to the new platform, validates HTTPS and routes, then switches DNS. Public links do not change. Only `songhai.site` URLs are documented for consumers; platform-generated preview URLs are operational details.

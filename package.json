@@ -8,11 +8,10 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "node scripts/docs-build.mjs",
+    "build": "node scripts/build.mjs",
     "preview": "vite preview",
     "api": "node --import tsx scripts/api-server.ts",
     "api:bundle": "node scripts/api-build.mjs",
-    "api:package": "node scripts/api-package.mjs",
     "api:test": "node --import tsx --test tests/*.test.ts",
     "mcp:agent": "node --import tsx mcp/agent-main.ts",
     "typecheck": "tsc --noEmit",

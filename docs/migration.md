@@ -1,9 +1,7 @@
-# Repository boundary
+# Project boundaries
 
-Franklin is the developer service; Frankie is the user-facing application.
+`frankie-tarot` owns the user interface at `https://tarot.songhai.site`. `franklin-tarot-api` owns data, deterministic draws, reading context, developer docs and CLI at `https://tarot-api.songhai.site`.
 
-This repository was extracted on 8 October 2026 from SonghaiFan/frankie-tarot at commit 1fc90cd plus the reviewed, uncommitted API migration work. That repository retains the application history and existing plugin worktrees. The authoritative dataset was moved without changing its JSON contents, preserving dataset versions and saved reading compatibility.
+This is a greenfield API: no legacy prediction routes, numeric card-ID aliases, historical response envelopes, or old hostname redirects. The browser keeps its current reading snapshot. Dataset and algorithm version checks prevent silently changing a reading; they are correctness checks, not support for old versions.
 
-Public consumer: https://github.com/SonghaiFan/frankie-tarot
-
-No source imports or local path dependencies connect the repositories. The app uses REST for user-triggered draws and Agent MCP for plugin context. Core service deployment is independent of the docs build and contains no UI runtime dependencies.
+The source dataset was extracted from the app repository. Card-data content remains unchanged by deployment cleanup.

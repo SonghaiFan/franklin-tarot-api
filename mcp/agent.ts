@@ -27,7 +27,7 @@ export function createAgentMcpServer(apiOrigin = process.env.PUBLIC_API_BASE_URL
 
   server.registerTool("get_tarot_card", {
     title: "Get tarot card meaning",
-    description: "Return the bilingual name, upright and reversed meanings, keywords, image URLs, and data provenance for one card. Stable IDs such as maj00 are preferred; legacy numeric IDs are accepted.",
+    description: "Return the bilingual name, upright and reversed meanings, keywords, image URLs, and data provenance for one card. Use stable card IDs such as maj00.",
     inputSchema: { cardId: z.string().min(1).max(32), locale: localeSchema },
     outputSchema: z.object({ card: z.any() }),
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },

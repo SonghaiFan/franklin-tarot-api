@@ -1,15 +1,11 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
-  "buildCommand": "npm run api:bundle",
-  "outputDirectory": "public",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
   "rewrites": [
     {
       "source": "/api/v1/:path*",
-      "destination": "/api/rest"
-    },
-    {
-      "source": "/api/tarot/:path*",
       "destination": "/api/rest"
     },
     {
@@ -34,13 +30,6 @@
           "value": "public, max-age=31536000, immutable"
         }
       ]
-    }
-  ],
-  "redirects": [
-    {
-      "source": "/",
-      "destination": "https://songhaifan.github.io/franklin-tarot-api/",
-      "permanent": false
     }
   ]
 }

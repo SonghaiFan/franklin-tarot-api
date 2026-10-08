@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { legacyReading } from "./legacy";
 import { API_VERSION, buildReadingContext, drawReading, getCard, listCards, listCardsQuerySchema, listSpreads, readingContextRequestSchema } from "./core";
 import openApiDocument from "../../public/openapi.json";
 
@@ -67,18 +66,6 @@ export async function handleTarotApi(request: Request): Promise<Response> {
     const locale = z.enum(["en", "zh-CN"]).safeParse(url.searchParams.get("locale") ?? "zh-CN");
     if (!locale.success) return bad(400, "VALIDATION_ERROR", "locale must be en or zh-CN.");
     return json({ spreads: listSpreads(locale.data), locale: locale.data });
-  }
-  if (request.method === "GET" && path === "/api/tarot/spreads") {
-    const locale = z.enum(["en", "zh-CN"]).safeParse(url.searchParams.get("locale") ?? "zh-CN");
-    if (!locale.success) return zodError(locale.error);
-    return json({ spreads: listSpreads(locale.data) });
-  }
-  if (request.method === "POST" && path === "/api/tarot/predict") {
-    try { return json(legacyReading(await readJson(request), origin)); }
-    catch (error) {
-      if (error instanceof z.ZodError) return zodError(error);
-      return bad(Number((error as any)?.status) || 400, (error as any)?.code || "INVALID_LEGACY_REQUEST", (error as Error).message);
-    }
   }
   if (request.method === "POST" && path === "/api/v1/readings/draw") {
     try { return json(drawReading(await readJson(request), origin)); }

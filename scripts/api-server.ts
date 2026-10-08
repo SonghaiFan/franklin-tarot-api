@@ -14,6 +14,21 @@ const server = createServer(async (incoming, outgoing) => {
   });
   incoming.on("end", async () => {
     try {
+      const pathname = new URL(incoming.url || "/", "http://localhost").pathname;
+      const asset = pathname.match(/^\/assets\/([a-zA-Z0-9_.-]+\.(js|css))$/);
+      if (incoming.method === "GET" && (pathname === "/" || asset)) {
+        try {
+          const file = asset ? join("assets", asset[1]) : "index.html";
+          const bytes = await readFile(join(process.cwd(), "dist", file));
+          const type = asset ? asset[2] === "js" ? "text/javascript" : "text/css" : "text/html";
+          outgoing.writeHead(200, { "Content-Type": `${type}; charset=utf-8`, "X-Content-Type-Options": "nosniff" });
+          outgoing.end(bytes);
+        } catch {
+          outgoing.writeHead(404, { "Content-Type": "text/plain" });
+          outgoing.end("Build the site with npm run build before serving documentation.");
+        }
+        return;
+      }
       const image = (incoming.url || "").match(/^\/images\/(cards|cards_dreamy|cards_rws_original)\/([a-zA-Z0-9_-]+\.webp)(?:\?v=[a-f0-9]+)?$/);
       if (incoming.method === "GET" && image) {
         try {

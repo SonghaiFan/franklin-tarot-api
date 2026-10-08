@@ -8,11 +8,11 @@ import { handleTarotApi } from "../src/api/http";
 
 const origin = "https://tarot.example";
 
-test("catalog exposes 78 stable IDs and maps legacy numeric IDs", () => {
+test("catalog exposes 78 stable IDs and rejects numeric aliases", () => {
   const result = listCards(listCardsQuerySchema.parse({ limit: 78 }), origin);
   assert.equal(result.total, 78);
   assert.equal(new Set(result.cards.map((card) => card.id)).size, 78);
-  assert.equal(getCard("0", "en", origin)?.id, "maj00");
+  assert.equal(getCard("0", "en", origin), undefined);
   assert.equal(getCard("maj00", "en", origin)?.names.en, "The Fool");
   assert.equal(listSpreads("en").length, 11);
   assert.ok(listSpreads("en").every((spread) => spread.cardCount === spread.labels.length));
@@ -58,6 +58,9 @@ test("REST routes return structured validation and size errors", async () => {
   const invalid = await handleTarotApi(new Request(`${origin}/api/v1/readings/draw`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ spread: "AUTO" }) }));
   assert.equal(invalid.status, 400);
   assert.equal((await invalid.json() as any).error.code, "VALIDATION_ERROR");
+  for (const [path, method] of [["/api/tarot/spreads", "GET"], ["/api/tarot/predict", "POST"], ["/api/v1/cards/0", "GET"]]) {
+    assert.equal((await handleTarotApi(new Request(`${origin}${path}`, { method }))).status, 404);
+  }
   const tooLarge = await handleTarotApi(new Request(`${origin}/api/v1/readings/context`, { method: "POST", body: " ".repeat(128 * 1024 + 1) }));
   assert.equal(tooLarge.status, 413);
   assert.equal((await tooLarge.json() as any).error.code, "BODY_TOO_LARGE");

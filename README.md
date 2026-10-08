@@ -34,29 +34,26 @@ Choose a spread from the catalog; `AUTO` is not drawable. Generate and retain a 
 
 MCP tools: `search_tarot_cards`, `get_tarot_card`, `list_tarot_spreads`, `draw_tarot_reading`, `get_tarot_reading_context`. They execute the same validated service logic in-process, without making an HTTP request back to their own deployment. `npm run mcp:agent` provides the stdio transport.
 
-## Validate and deploy
+## Build, run and deploy
 
 ```sh
 npm run api:test
 npm run typecheck
-npm run api:package
-# With npm run api running in another terminal:
+npm run build
+npm run api
+# In another terminal:
 node scripts/api-smoke.mjs http://127.0.0.1:3001
 ```
 
-`api:package` builds `.api-deploy/` from an explicit allowlist: three bundled Node functions, OpenAPI and 234 WebP card images. No UI, old plugin, environment files or runtime npm install is required. The output directory is generated and is replaced on each run.
+One build serves documentation, REST, MCP, OpenAPI and card artwork. Vercel deploys the repository using its single `vercel.json`; GitHub Actions runs checks. See [deployment instructions](docs/api-deployment.md).
 
-See [deployment instructions and verification status](docs/api-deployment.md). Deploy this generated package to the separate `franklin-tarot-api` project; the root `vercel.json` also supports API-only Git deployments, separately from the static docs workflow.
-
-## Documentation and example app
-
-`npm run dev` previews the developer documentation; `npm run build` builds it. GitHub Pages serves static documentation, not the REST/MCP server. The live documentation example calls the public API and reuses its returned snapshot for follow-up.
+`npm run dev` previews documentation during editing. After building, `npm run api` serves the complete site locally. The online example uses the current origin and preserves the returned snapshot for follow-up.
 
 The independent [Frankie Tarot app](https://github.com/SonghaiFan/frankie-tarot) is the reference consumer, live at [tarot.songhai.site](https://tarot.songhai.site). Browsers use REST; its plugin adapter calls this service through MCP. There are no sibling source imports or local path dependencies.
 
-Public API: `https://tarot-api.songhai.site` · Agent MCP: `/mcp/agent` · [Developer documentation](https://songhaifan.github.io/franklin-tarot-api/).
+Public API: `https://tarot-api.songhai.site` · Agent MCP: `/mcp/agent` · [Developer documentation](https://tarot-api.songhai.site/).
 
-`npm run cli -- "Question" --spread THREE --locale en --json` provides the developer CLI. Compatibility routes `/api/tarot/spreads` and `/api/tarot/predict` preserve the previous response envelope and the legacy `AUTO` → `SINGLE` behavior; new integrations should use v1. Custom cards are validated and their meanings come from the server dataset.
+`npm run cli -- "Question" --spread THREE --locale en` returns the same JSON as REST/MCP. Only the v1 API and stable card IDs are supported.
 
 ## Data and interpretation
 

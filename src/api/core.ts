@@ -29,19 +29,8 @@ function suitFor(id: string): string | null {
   return null;
 }
 
-export function canonicalCardId(input: string | number): string | undefined {
-  const value = String(input);
-  if (cardsByStableId.has(value)) return value;
-  if (/^\d+$/.test(value)) {
-    const numeric = Number(value);
-    const legacy = data.cards.byId[String(numeric)];
-    return legacy?.image?.replace(/\.[^.]+$/, "");
-  }
-  return undefined;
-}
-
-export function getCard(cardId: string | number, locale: ApiLocale, origin: string) {
-  const id = canonicalCardId(cardId);
+export function getCard(cardId: string, locale: ApiLocale, origin: string) {
+  const id = cardsByStableId.has(cardId) ? cardId : undefined;
   const source = id ? cardsByStableId.get(id) : undefined;
   if (!id || !source) return undefined;
   const urls = Object.fromEntries(["redraw", "dreamy", "original"].map((style) =>
@@ -49,7 +38,6 @@ export function getCard(cardId: string | number, locale: ApiLocale, origin: stri
   ));
   return {
     id,
-    legacyId: source.numericId,
     name: localeText(source.name, locale),
     names: { en: source.name.en, "zh-CN": source.name["zh-CN"] },
     arcana: source.numericId < 22 ? "MAJOR" : "MINOR",
