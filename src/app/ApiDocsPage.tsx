@@ -7,7 +7,7 @@ import { COPY, type Locale } from "./copy";
 
 const API_BASE = "https://tarot-api.songhai.site";
 
-const drawRequest = `// Create and persist the seed before sending if retries must replay this draw.
+const drawRequest = (locale: Locale) => `// Create and persist the seed before sending if retries must replay this draw.
 const seed = crypto.randomUUID();
 localStorage.setItem("pending-tarot-seed", seed);
 
@@ -15,9 +15,9 @@ const response = await fetch("${API_BASE}/api/v1/readings/draw", {
   method: "POST",
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify({
-    question: "What deserves my attention today?",
+    question: "${locale === "zh-CN" ? "今天有什么值得我关注？" : "What deserves my attention today?"}",
     spread: "THREE",
-    locale: "en",
+    locale: "${locale}",
     seed
   })
 });
@@ -26,12 +26,12 @@ const { reading, context } = await response.json();
 localStorage.setItem("tarot-reading", JSON.stringify(reading));
 // Pass this same reading to /api/v1/readings/context for follow-ups.`;
 
-const drawCurl = `curl -X POST ${API_BASE}/api/v1/readings/draw \\
+const drawCurl = (locale: Locale) => `curl -X POST ${API_BASE}/api/v1/readings/draw \\
   -H "Content-Type: application/json" \\
   -d '{
-    "question": "What deserves my attention today?",
+    "question": "${locale === "zh-CN" ? "今天有什么值得我关注？" : "What deserves my attention today?"}",
     "spread": "THREE",
-    "locale": "en",
+    "locale": "${locale}",
     "seed": "caller-generated-retry-token"
   }'`;
 
@@ -59,21 +59,21 @@ const SECTION_IDS = ["overview", "quickstart", "endpoints", "spreads", "response
 
 /** The app's small tracked caps: section eyebrows, list headers, metadata. */
 function Eyebrow({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  return <p className={`text-[10px] font-light uppercase tracking-[0.3em] text-neutral-500 ${className}`}>{children}</p>;
+  return <p className={`text-[12px] font-light uppercase tracking-[0.2em] text-neutral-500 ${className}`}>{children}</p>;
 }
 
 function SectionHead({ index, eyebrow, title, children }: { index: string; eyebrow: string; title: string; children?: React.ReactNode }) {
   return (
     <div className="mb-12">
       <Eyebrow>{index} · {eyebrow}</Eyebrow>
-      <h2 className="mt-5 font-cinzel text-lg uppercase tracking-[0.28em] text-white/85 sm:text-xl">{title}</h2>
+      <h2 className="mt-5 font-cinzel text-xl uppercase tracking-[0.18em] text-white/85 sm:text-2xl">{title}</h2>
       <div className="mt-6 h-px w-8 bg-white/40" />
-      {children && <p className="mt-6 max-w-[62ch] text-[13px] font-light leading-7 text-neutral-400">{children}</p>}
+      {children && <p className="mt-6 max-w-[62ch] text-[15px] font-light leading-7 text-neutral-400">{children}</p>}
     </div>
   );
 }
 
-function CodeBlock({ children, label = "" }: { children: string; label?: string }) {
+function CodeBlock({ children, label = "", locale = "en" }: { children: string; label?: string; locale?: Locale }) {
   const [copied, setCopied] = useState(false);
   const copy = async () => {
     await navigator.clipboard?.writeText(children);
@@ -83,21 +83,21 @@ function CodeBlock({ children, label = "" }: { children: string; label?: string 
 
   return (
     <div className="min-w-0 border border-white/10 bg-black/40">
-      <div className="flex items-center justify-between border-b border-white/10 px-4 py-2.5 text-[9px] font-light uppercase tracking-[0.3em] text-neutral-500">
+      <div className="flex items-center justify-between border-b border-white/10 px-4 py-2.5 text-[12px] font-light uppercase tracking-[0.15em] text-neutral-500">
         <span>{label || "request"}</span>
-        <button onClick={copy} className="flex items-center gap-1.5 uppercase tracking-[0.3em] text-neutral-500 transition-colors duration-300 hover:text-white" aria-label="Copy code">
+        <button onClick={copy} className="flex items-center gap-1.5 uppercase tracking-[0.15em] text-neutral-500 transition-colors duration-300 hover:text-white" aria-label="Copy code">
           {copied ? <Check size={11} strokeWidth={1.5} /> : <Copy size={11} strokeWidth={1.5} />}
-          {copied ? "Copied" : "Copy"}
+          {copied ? COPY[locale].copied : COPY[locale].copy}
         </button>
       </div>
-      <pre className="overflow-x-auto p-5 font-mono text-[11.5px] leading-[1.85] text-neutral-300"><code>{children}</code></pre>
+      <pre className="overflow-x-auto p-5 font-mono text-[13px] leading-[1.8] text-neutral-300"><code>{children}</code></pre>
     </div>
   );
 }
 
 function Method({ method }: { method: string }) {
   return (
-    <span className={`inline-block w-12 border py-1 text-center font-mono text-[9px] tracking-[0.2em] ${method === "POST" ? "border-white/60 text-white" : "border-white/15 text-neutral-400"}`}>
+    <span className={`inline-block w-14 border py-1 text-center font-mono text-[11px] tracking-[0.12em] ${method === "POST" ? "border-white/60 text-white" : "border-white/15 text-neutral-400"}`}>
       {method}
     </span>
   );
@@ -108,9 +108,9 @@ function Endpoint({ method, path, description, children }: { method: string; pat
     <article className="border-t border-white/10 py-10 first:border-t-0 first:pt-0 last:pb-0">
       <div className="mb-4 flex flex-wrap items-center gap-4">
         <Method method={method} />
-        <code className="font-mono text-[13px] tracking-wide text-white/90">{path}</code>
+        <code className="font-mono text-[15px] tracking-wide text-white/90">{path}</code>
       </div>
-      <p className="mb-6 max-w-[56ch] text-[13px] font-light leading-7 text-neutral-400">{description}</p>
+      <p className="mb-6 max-w-[56ch] text-[15px] font-light leading-7 text-neutral-400">{description}</p>
       {children}
     </article>
   );
@@ -119,7 +119,7 @@ function Endpoint({ method, path, description, children }: { method: string; pat
 function Disclosure({ summary, children }: { summary: string; children: React.ReactNode }) {
   return (
     <details className="group mt-6">
-      <summary className="inline-flex cursor-pointer list-none items-center gap-2 text-[10px] uppercase tracking-[0.3em] text-neutral-500 transition-colors duration-300 hover:text-white [&::-webkit-details-marker]:hidden">
+      <summary className="inline-flex cursor-pointer list-none items-center gap-2 text-[13px] uppercase tracking-[0.12em] text-neutral-500 transition-colors duration-300 hover:text-white [&::-webkit-details-marker]:hidden">
         <ChevronDown size={12} strokeWidth={1.5} className="transition-transform duration-300 group-open:rotate-180" />
         {summary}
       </summary>
@@ -161,10 +161,11 @@ function useActiveSection(ids: string[]) {
   return active;
 }
 
-const SECTION_IDS = NAV.map((item) => item.toLowerCase());
-
 export default function ApiDocsPage() {
-  const [locale, setLocale] = useState<Locale>(() => localStorage.getItem("franklin-docs-locale") === "zh-CN" ? "zh-CN" : "en");
+  const [locale, setLocale] = useState<Locale>(() => {
+    try { return localStorage.getItem("franklin-docs-locale") === "zh-CN" ? "zh-CN" : "en"; }
+    catch { return "en"; }
+  });
   const [menuOpen, setMenuOpen] = useState(false);
   const [spreads, setSpreads] = useState<Spread[] | null>(null);
   const [spreadError, setSpreadError] = useState(false);
@@ -190,7 +191,7 @@ export default function ApiDocsPage() {
 
   const changeLocale = (next: Locale) => {
     setLocale(next);
-    localStorage.setItem("franklin-docs-locale", next);
+    try { localStorage.setItem("franklin-docs-locale", next); } catch { /* Language toggle still works when storage is blocked. */ }
   };
 
   return (
@@ -257,96 +258,96 @@ export default function ApiDocsPage() {
           </section>
 
           <section className="grid grid-cols-3 border border-white/10">
-            {[["78", "Cards"], ["11", "Spreads"], ["2", "Locales"]].map(([value, label]) => (
+            {[["78", copy.stats[0]], ["11", copy.stats[1]], ["2", copy.stats[2]]].map(([value, label]) => (
               <div key={label} className="border-l border-white/10 px-4 py-7 text-center first:border-l-0 sm:px-6">
                 <p className="font-cinzel text-2xl font-normal text-white/90 sm:text-3xl">{value}</p>
-                <p className="mt-3 text-[9px] font-light uppercase tracking-[0.3em] text-neutral-500">{label}</p>
+                <p className="mt-3 text-[12px] font-light tracking-[0.16em] text-neutral-400">{label}</p>
               </div>
             ))}
           </section>
 
           <section id="quickstart" className="scroll-mt-16 py-28">
-            <SectionHead index="01" eyebrow="Quickstart" title="Your first draw" />
+            <SectionHead index="01" eyebrow={copy.quickstart} title={copy.firstDraw}>{copy.quickDescription}</SectionHead>
             <dl className="mb-8 grid border border-white/10 sm:grid-cols-[140px_1fr]">
               {[
-                ["Base URL", <code key="u" className="break-all font-mono text-white/85">{API_BASE}</code>],
-                ["Auth", "None. No key required."],
-                ["Spreads", <span key="s">Pick one from <code className="font-mono text-white/75">/api/v1/spreads</code>.</span>],
-                ["State", "Persist the seed before sending and keep the returned reading snapshot in your own app."],
+                [copy.quickFields[0], <code key="u" className="break-all font-mono text-white/85">{API_BASE}</code>],
+                [copy.quickFields[1], copy.auth],
+                [copy.quickFields[2], <span key="s">{copy.spreadChoice} <code className="font-mono text-white/75">/api/v1/spreads</code>.</span>],
+                [copy.quickFields[3], copy.state],
               ].map(([term, detail], index) => (
                 <div key={index} className="contents">
-                  <dt className={`px-5 pt-4 text-[9px] uppercase tracking-[0.3em] text-neutral-500 sm:py-4 ${index ? "border-t border-white/10" : ""}`}>{term}</dt>
-                  <dd className={`px-5 pb-4 pt-1.5 text-[12px] font-light leading-6 text-neutral-400 sm:py-4 ${index ? "sm:border-t sm:border-white/10" : ""}`}>{detail}</dd>
+                  <dt className={`px-5 pt-4 text-[12px] uppercase tracking-[0.12em] text-neutral-400 sm:py-4 ${index ? "border-t border-white/10" : ""}`}>{term}</dt>
+                  <dd className={`px-5 pb-4 pt-1.5 text-[15px] font-light leading-7 text-neutral-300 sm:py-4 ${index ? "sm:border-t sm:border-white/10" : ""}`}>{detail}</dd>
                 </div>
               ))}
             </dl>
-            <LiveExample origin={API_ORIGIN} />
-            <CodeBlock label="javascript · fetch">{drawRequest}</CodeBlock>
-            <p className="mt-6 max-w-[62ch] text-[12px] font-light leading-6 text-neutral-500">The server never stores a question or reading. The agent or app interprets the structured context; tarot does not establish factual outcomes or probabilities.</p>
-            <Disclosure summary="Equivalent cURL request"><CodeBlock label="curl · draw">{drawCurl}</CodeBlock></Disclosure>
+            <LiveExample origin={API_ORIGIN} locale={locale} />
+            <CodeBlock locale={locale} label="javascript · fetch">{drawRequest(locale)}</CodeBlock>
+            <p className="mt-6 max-w-[62ch] text-[15px] font-light leading-7 text-neutral-400">{copy.statelessNote}</p>
+            <Disclosure summary={copy.equivalentCurl}><CodeBlock locale={locale} label="curl · draw">{drawCurl(locale)}</CodeBlock></Disclosure>
           </section>
 
           <section id="endpoints" className="scroll-mt-16 border-t border-white/10 py-28">
-            <SectionHead index="02" eyebrow="Endpoints" title="Six primitives" />
+            <SectionHead index="02" eyebrow={copy.nav[2]} title={copy.errors} />
             <div>
-              <Endpoint method="GET" path="/health" description="Lightweight service health check."><CodeBlock label="request">{`curl "${API_BASE}/health"`}</CodeBlock></Endpoint>
-              <Endpoint method="GET" path="/api/v1/cards" description="Search by English or Chinese name, keyword, description, or meaning. Supports arcana, suit, locale and pagination filters."><CodeBlock label="request">{`curl "${API_BASE}/api/v1/cards?q=moon&locale=en&limit=10"`}</CodeBlock></Endpoint>
-              <Endpoint method="GET" path="/api/v1/cards/{id}" description="Get full bilingual card data, upright/reversed meanings, provenance notes, and versioned image URLs. Use stable card IDs such as maj00."><CodeBlock label="request">{`curl "${API_BASE}/api/v1/cards/maj00?locale=en"`}</CodeBlock></Endpoint>
-              <Endpoint method="GET" path="/api/v1/spreads" description="List the 11 supported spreads with relative card positions, localized labels, position card pools, and interpretation goals. AUTO is intentionally excluded."><CodeBlock label="request">{`curl "${API_BASE}/api/v1/spreads?locale=en"`}</CodeBlock></Endpoint>
-              <Endpoint method="POST" path="/api/v1/readings/draw" description="Create a seeded reading. Caller picks a real spread and may retain a seed to make retries deterministic."><CodeBlock label="javascript · fetch">{drawRequest}</CodeBlock></Endpoint>
-              <Endpoint method="POST" path="/api/v1/readings/context" description="Validate the caller-held snapshot and reconstruct authoritative meanings for a follow-up; never redraws or persists the reading."><CodeBlock label="request">{`fetch("${API_BASE}/api/v1/readings/context", {\n  method: "POST",\n  headers: { "Content-Type": "application/json" },\n  body: JSON.stringify({ reading, question: "And if I wait?", locale: "en" })\n})`}</CodeBlock></Endpoint>
+              <Endpoint method="GET" path="/health" description={copy.endpointDescriptions[0]}><CodeBlock locale={locale} label="request">{`curl "${API_BASE}/health"`}</CodeBlock></Endpoint>
+              <Endpoint method="GET" path="/api/v1/cards" description={copy.endpointDescriptions[1]}><CodeBlock locale={locale} label="request">{`curl "${API_BASE}/api/v1/cards?q=moon&locale=${locale}&limit=10"`}</CodeBlock></Endpoint>
+              <Endpoint method="GET" path="/api/v1/cards/{id}" description={copy.endpointDescriptions[2]}><CodeBlock locale={locale} label="request">{`curl "${API_BASE}/api/v1/cards/maj00?locale=${locale}"`}</CodeBlock></Endpoint>
+              <Endpoint method="GET" path="/api/v1/spreads" description={copy.endpointDescriptions[3]}><CodeBlock locale={locale} label="request">{`curl "${API_BASE}/api/v1/spreads?locale=${locale}"`}</CodeBlock></Endpoint>
+              <Endpoint method="POST" path="/api/v1/readings/draw" description={copy.endpointDescriptions[4]}><CodeBlock locale={locale} label="javascript · fetch">{drawRequest(locale)}</CodeBlock></Endpoint>
+              <Endpoint method="POST" path="/api/v1/readings/context" description={copy.endpointDescriptions[5]}><CodeBlock locale={locale} label="request">{`fetch("${API_BASE}/api/v1/readings/context", {\n  method: "POST",\n  headers: { "Content-Type": "application/json" },\n  body: JSON.stringify({ reading, question: "${locale === "zh-CN" ? "如果我等待呢？" : "And if I wait?"}", locale: "${locale}" })\n})`}</CodeBlock></Endpoint>
             </div>
           </section>
 
           <section id="spreads" className="scroll-mt-16 border-t border-white/10 py-28">
-            <SectionHead index="03" eyebrow="Spread layouts" title="See the spread">
-              Each diagram uses the same relative card positions as the Frankie app. Numbers show draw order; the list below each layout names what every position represents.
+            <SectionHead index="03" eyebrow={copy.nav[3]} title={copy.spreadTitle}>
+              {copy.spreadDescription}
             </SectionHead>
-            {spreads && <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3 xl:grid-cols-3 xl:gap-4">{spreads.map((spread) => <SpreadLayout key={spread.id} spread={spread} />)}</div>}
-            {!spreads && <p role="status" className="border border-white/10 px-5 py-6 text-center text-[10px] uppercase tracking-[0.3em] text-neutral-500">{spreadError ? "Spread layouts could not be loaded. Try refreshing." : "Loading spread layouts…"}</p>}
-            <p className="mt-6 text-[12px] font-light leading-6 text-neutral-500">Positions and localized labels come from <code className="font-mono text-white/70">GET /api/v1/spreads</code>; use the returned spread ID when creating a reading.</p>
+            {spreads && <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3 xl:grid-cols-3 xl:gap-4">{spreads.map((spread) => <SpreadLayout key={spread.id} spread={spread} locale={locale} />)}</div>}
+            {!spreads && <p role="status" className="border border-white/10 px-5 py-6 text-center text-[13px] tracking-wide text-neutral-400">{spreadError ? copy.spreadLoadError : copy.spreadLoading}</p>}
+            <p className="mt-6 text-[15px] font-light leading-7 text-neutral-400">{copy.spreadDataNote} <code className="font-mono text-white/80">GET /api/v1/spreads</code>; {locale === "zh-CN" ? "创建牌局时使用返回的牌阵 ID。" : "use the returned spread ID when creating a reading."}</p>
 
             <div className="mt-28 border-t border-white/10 pt-28">
-              <SectionHead index="04" eyebrow="Agent use" title="REST or MCP" />
-              <p className="mb-8 max-w-[68ch] text-[13px] font-light leading-7 text-neutral-400">Try the user-facing <a className="text-white underline decoration-white/30 underline-offset-4 transition-colors hover:decoration-white" href="https://tarot.songhai.site">Frankie Tarot app</a>, or build your own interface. The API repository exposes a UI-free Agent MCP at <code className="font-mono text-white/75">/mcp/agent</code>. Ask the agent to list spreads before drawing; it should retain the returned reading snapshot and call the context tool for follow-ups.</p>
-              <Eyebrow className="mb-3">Tools</Eyebrow>
+              <SectionHead index="04" eyebrow={copy.agentUse} title={copy.restOrMcp} />
+              <p className="mb-8 max-w-[68ch] text-[16px] font-light leading-8 text-neutral-300">{copy.agentDescription} <code className="font-mono text-white/85">/mcp/agent</code>. {copy.agentInstruction} <a className="text-white underline decoration-white/30 underline-offset-4 transition-colors hover:decoration-white" href="/agents.md">{locale === "zh-CN" ? "阅读 Agent 接入指南" : "Read the Agent guide"}</a>. <a className="text-white underline decoration-white/30 underline-offset-4 transition-colors hover:decoration-white" href="https://tarot.songhai.site">{locale === "zh-CN" ? "体验 Frankie Tarot" : "Try Frankie Tarot"}</a>.</p>
+              <Eyebrow className="mb-3">{copy.tools}</Eyebrow>
               <ul className="mb-10 border-t border-white/10">
                 {["search_tarot_cards", "get_tarot_card", "list_tarot_spreads", "draw_tarot_reading", "get_tarot_reading_context"].map((tool, index) => (
                   <li key={tool} className="flex items-baseline gap-4 border-b border-white/10 py-3">
                     <span className="font-mono text-[9px] text-white/30">0{index + 1}</span>
-                    <code className="font-mono text-[12px] text-white/80">{tool}</code>
+                    <code className="font-mono text-[14px] text-white/80">{tool}</code>
                   </li>
                 ))}
               </ul>
-              <div className="grid gap-3 sm:grid-cols-2"><CodeBlock label="MCP · endpoint">{`${API_BASE}/mcp/agent`}</CodeBlock><CodeBlock label="OpenAPI">{`${API_BASE}/openapi.json`}</CodeBlock></div>
-              <p className="mt-6 max-w-[68ch] text-[12px] font-light leading-6 text-neutral-500">Web and plugin interfaces are separate example applications. The browser calls REST for user-triggered draws; the plugin host adapter can call Agent MCP for spread and follow-up context.</p>
+              <div className="grid gap-3 sm:grid-cols-2"><CodeBlock locale={locale} label="MCP · endpoint">{`${API_BASE}/mcp/agent`}</CodeBlock><CodeBlock locale={locale} label="OpenAPI">{`${API_BASE}/openapi.json`}</CodeBlock></div>
+              <p className="mt-6 max-w-[68ch] text-[15px] font-light leading-7 text-neutral-400">{copy.agentNote}</p>
             </div>
           </section>
 
           <section id="response" className="scroll-mt-16 border-t border-white/10 py-28">
-            <SectionHead index="05" eyebrow="Response" title="Predictable by design" />
+            <SectionHead index="05" eyebrow={copy.nav[4]} title={copy.predictable} />
             <div className="grid gap-12 lg:grid-cols-[.8fr_1.2fr] lg:items-start">
               <div>
-                <p className="text-[13px] font-light leading-7 text-neutral-400">A draw returns an immutable replay snapshot and structured context. Your app or agent controls interpretation and retains only the snapshot it needs.</p>
-                <ul className="mt-8 border-t border-white/10 text-[12px] font-light leading-6 text-neutral-400">
+                <p className="text-[16px] font-light leading-8 text-neutral-300">{copy.responseDescription}</p>
+                <ul className="mt-8 border-t border-white/10 text-[15px] font-light leading-7 text-neutral-300">
                   {[
-                    <><code className="font-mono text-white/75">reading.seed</code>, dataset version, and algorithm version support deterministic replay.</>,
-                    <><code className="font-mono text-white/75">context.cards[].selectedMeaning</code> follows each card's orientation.</>,
-                    <>Structured errors include stable codes; questions and readings are not stored.</>,
+                    <><code className="font-mono text-white/85">reading.seed</code> · {copy.responseBullets[0]}</>,
+                    <><code className="font-mono text-white/85">context.cards[].selectedMeaning</code> · {copy.responseBullets[1]}</>,
+                    copy.responseBullets[2],
                   ].map((item, index) => (
                     <li key={index} className="flex gap-4 border-b border-white/10 py-4"><span className="mt-3 h-px w-4 shrink-0 bg-white/30" /><span>{item}</span></li>
                   ))}
                 </ul>
-                <a className="mt-8 inline-flex items-center gap-2 border border-white/20 px-4 py-2.5 text-[10px] uppercase tracking-[0.3em] text-neutral-400 transition-colors duration-300 hover:border-white/50 hover:text-white" href={`${import.meta.env.BASE_URL}openapi.json`}>OpenAPI schema <ArrowUpRight size={12} strokeWidth={1.5} /></a>
+                <a className="mt-8 inline-flex items-center gap-2 border border-white/20 px-4 py-2.5 text-[13px] tracking-[0.1em] text-neutral-300 transition-colors duration-300 hover:border-white/50 hover:text-white" href={`${import.meta.env.BASE_URL}openapi.json`}>{copy.openapi} <ArrowUpRight size={14} strokeWidth={1.5} /></a>
               </div>
-              <CodeBlock label="200 · application/json">{drawResponse}</CodeBlock>
+              <CodeBlock locale={locale} label="200 · application/json">{drawResponse}</CodeBlock>
             </div>
           </section>
 
           <footer className="flex flex-col gap-4 border-t border-white/10 pt-8 text-[9px] font-light uppercase tracking-[0.3em] text-neutral-600 sm:flex-row sm:items-center sm:justify-between">
             <span>Franklin · MIT License</span>
-            <span>For reflection, not prediction</span>
-            <a className="inline-flex items-center gap-1.5 transition-colors duration-300 hover:text-white" href="https://github.com/SonghaiFan/franklin-tarot-api">Source <ArrowUpRight size={11} strokeWidth={1.5} /></a>
+            <span>{copy.footer[0]}</span>
+            <a className="inline-flex items-center gap-1.5 transition-colors duration-300 hover:text-white" href="https://github.com/SonghaiFan/franklin-tarot-api">{copy.footer[1]} <ArrowUpRight size={13} strokeWidth={1.5} /></a>
           </footer>
         </div>
       </main>

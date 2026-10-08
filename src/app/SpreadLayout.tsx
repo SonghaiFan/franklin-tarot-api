@@ -1,3 +1,5 @@
+import type { Locale } from "./copy";
+
 type Position = { x: number; y: number; rotation?: number };
 type Spread = {
   id: string;
@@ -54,18 +56,18 @@ function SpreadDiagram({ spread }: { spread: Spread }) {
   );
 }
 
-export default function SpreadLayout({ spread }: { spread: Spread }) {
+export default function SpreadLayout({ spread, locale }: { spread: Spread; locale: Locale }) {
   return (
     <article className="group flex flex-col border border-white/10 p-4 transition-colors duration-500 hover:border-white/30 sm:p-5">
       <div className="flex items-baseline justify-between gap-3">
-        <h3 className="font-cinzel text-[11px] uppercase tracking-[0.16em] text-white/80">{spread.name}</h3>
-        <span className="shrink-0 text-[9px] font-light uppercase tracking-[0.24em] text-neutral-500">{spread.cardCount} {spread.cardCount === 1 ? "card" : "cards"}</span>
+        <h3 className="font-cinzel text-[14px] tracking-[0.08em] text-white/90">{spread.name}</h3>
+        <span className="shrink-0 text-[12px] font-light tracking-wide text-neutral-400">{spread.cardCount} {locale === "zh-CN" ? "张牌" : spread.cardCount === 1 ? "card" : "cards"}</span>
       </div>
       <SpreadDiagram spread={spread} />
-      <ol className="mt-auto border-t border-white/10" aria-label={`${spread.name} positions in draw order`}>
+      <ol className="mt-auto border-t border-white/10" aria-label={locale === "zh-CN" ? `${spread.name}：按抽牌顺序排列的位置` : `${spread.name} positions in draw order`}>
         {spread.labels.map((label, index) => (
-          <li key={`${index}-${label}`} className="flex items-baseline gap-3 border-b border-white/5 py-1.5 text-[10px] font-light leading-4 text-neutral-400 last:border-b-0">
-            <span className="w-4 shrink-0 font-mono text-[9px] text-white/30">{String(index + 1).padStart(2, "0")}</span>
+          <li key={`${index}-${label}`} className="flex items-baseline gap-3 border-b border-white/5 py-2 text-[14px] font-light leading-6 text-neutral-300 last:border-b-0">
+            <span className="w-5 shrink-0 font-mono text-[11px] text-white/45">{String(index + 1).padStart(2, "0")}</span>
             {label.replace(new RegExp(`^${index + 1}\\.\\s*`), "")}
           </li>
         ))}

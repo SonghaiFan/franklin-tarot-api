@@ -183,39 +183,4 @@ export function drawReading(input: DrawRequest, origin: string) {
   return { reading: { ...snapshot, question: request.question, locale: request.locale }, context: { question: request.question, locale: request.locale, spread: { id: spread.id, name: spread.name, description: spread.description, cardCount: spread.cardCount, interpretationInstruction: spread.interpretationInstruction }, cards }, policy: "Tarot is offered for symbolic reflection; the cards do not establish factual outcomes or probabilities." };
 }
 
-export const readingContextRequestSchema = z.object({
-  reading: z.object({
-    readingId: z.string().length(24),
-    datasetVersion: z.string(),
-    algorithmVersion: z.string(),
-    seed: z.string().min(1).max(128),
-    spreadId: z.string(),
-    drawLocale: localeSchema,
-    reversedProbability: z.number().min(0).max(1),
-    cards: z.array(z.object({ positionIndex: z.number().int().positive(), positionLabel: z.string(), cardId: z.string(), orientation: z.enum(["UPRIGHT", "REVERSED"]) }).strict()),
-    // The draw endpoint returns these convenience fields; accept them when its
-    // `reading` object is passed back verbatim, but never use them as authority.
-    question: z.string().optional(),
-    locale: localeSchema.optional(),
-  }).strict(),
-  question: z.string().trim().max(2000).default(""),
-  locale: localeSchema.default("zh-CN"),
-}).strict();
-export type ReadingContextRequest = z.input<typeof readingContextRequestSchema>;
-
-export function buildReadingContext(input: ReadingContextRequest, origin: string) {
-  const request = readingContextRequestSchema.parse(input);
-  if (request.reading.datasetVersion !== DATASET_VERSION) throw Object.assign(new Error("This reading uses an unsupported card dataset version."), { status: 409, code: "DATASET_VERSION_UNAVAILABLE" });
-  if (request.reading.algorithmVersion !== DRAW_ALGORITHM_VERSION) throw Object.assign(new Error("This reading uses an unsupported draw algorithm version."), { status: 409, code: "ALGORITHM_VERSION_UNAVAILABLE" });
-  const replay = drawReading({ spread: request.reading.spreadId, seed: request.reading.seed, reversedProbability: request.reading.reversedProbability, locale: request.reading.drawLocale }, origin);
-  if (replay.reading.readingId !== request.reading.readingId || JSON.stringify(replay.reading.cards) !== JSON.stringify(request.reading.cards)) {
-    throw Object.assign(new Error("The supplied reading snapshot does not match its seed and version."), { status: 400, code: "INVALID_READING_SNAPSHOT" });
-  }
-  const localized = request.locale === request.reading.drawLocale
-    ? replay
-    : drawReading({ spread: request.reading.spreadId, seed: request.reading.seed, reversedProbability: request.reading.reversedProbability, locale: request.locale }, origin);
-  return { ...localized.context, question: request.question, sourceReadingId: request.reading.readingId, policy: replay.policy };
-}
-
 export const agentDrawSchema = drawRequestSchema;
-export const agentContextSchema = readingContextRequestSchema;

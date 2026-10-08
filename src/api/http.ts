@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { API_VERSION, buildReadingContext, drawReading, getCard, listCards, listCardsQuerySchema, listSpreads, readingContextRequestSchema } from "./core";
+import { API_VERSION, drawReading, getCard, listCards, listCardsQuerySchema, listSpreads } from "./core";
 import openApiDocument from "../../public/openapi.json";
 
 const cors = {
@@ -74,15 +74,8 @@ export async function handleTarotApi(request: Request): Promise<Response> {
       return bad(Number((error as any)?.status) || 400, (error as any)?.code || "DRAW_FAILED", (error as Error).message || "The draw could not be completed.");
     }
   }
-  if (request.method === "POST" && path === "/api/v1/readings/context") {
-    try { return json(buildReadingContext(await readJson(request), origin)); }
-    catch (error) {
-      if (error instanceof z.ZodError) return zodError(error);
-      return bad(Number((error as any)?.status) || 400, (error as any)?.code || "CONTEXT_FAILED", (error as Error).message || "The reading context could not be assembled.");
-    }
-  }
   if (/^\/api\/v1(?:\/|$)/.test(path)) {
-    const allow = path === "/api/v1/readings/draw" || path === "/api/v1/readings/context" ? "GET, POST, OPTIONS" : "GET, OPTIONS";
+    const allow = path === "/api/v1/readings/draw" ? "GET, POST, OPTIONS" : "GET, OPTIONS";
     return bad(request.method === "GET" || request.method === "POST" ? 404 : 405, request.method === "GET" || request.method === "POST" ? "NOT_FOUND" : "METHOD_NOT_ALLOWED", "No API route matches this request.", { path, allow });
   }
   return bad(404, "NOT_FOUND", "No route matches this request.");

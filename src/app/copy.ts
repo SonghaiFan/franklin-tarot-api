@@ -1,4 +1,17 @@
 export type Locale = "en" | "zh-CN";
+type CopySet = {
+  nav: string[]; onPage: string; asideNote: string; heroEyebrow: string; heroDescription: string;
+  quickstart: string; reference: string; stats: string[]; firstDraw: string; quickDescription: string;
+  quickFields: string[]; auth: string; spreadChoice: string; state: string; liveTitle: string;
+  liveDescription: string; loading: string; draw: string; replay: string; retry: string;
+  followup: string; inspect: string; copied: string; copy: string; errors: string;
+  endpointDescriptions: string[]; equivalentCurl: string; statelessNote: string; spreadTitle: string;
+  spreadDescription: string; spreadLoadError: string; spreadLoading: string; spreadDataNote: string;
+  agentUse: string; restOrMcp: string; agentDescription: string; agentInstruction: string;
+  tools: string; agentNote: string; predictable: string; responseDescription: string;
+  responseBullets: string[]; openapi: string; footer: string[]; positions: string;
+  card: string; cards: string;
+};
 
 export const COPY = {
   en: {
@@ -37,4 +50,4 @@ export const COPY = {
     predictable: "响应可验证、可重放", responseDescription: "抽牌会返回可重放的牌局快照和结构化上下文。如何解读由你的应用或 Agent 决定，所需快照也由调用方保存。", responseBullets: ["seed、数据集版本和算法版本用于确定性重放。", "选中的牌义会对应卡牌的正位或逆位。", "结构化错误包含稳定错误码；问题与牌局不会被保存。"], openapi: "OpenAPI Schema", footer: ["用于反思，不作预测", "源码"],
     positions: "按抽牌顺序排列", card: "张牌", cards: "张牌",
   },
-} satisfies Record<Locale, Record<string, string | string[]>>;
+} satisfies Record<Locale, CopySet>;
