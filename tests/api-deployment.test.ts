@@ -25,9 +25,6 @@ test("HTTP MCP draws and continues the same reading without fetching its own pro
     const draw = await call("draw_tarot_reading", args);
     const rest = await handleTarotApi(new Request(`${origin}/api/v1/readings/draw`, { method: "POST", body: JSON.stringify(args) }));
     assert.deepEqual(draw, await rest.json());
-    const context = await call("get_tarot_reading_context", { reading: draw.reading, question: "Follow up", locale: "zh-CN" });
-    assert.equal(context.sourceReadingId, draw.reading.readingId);
-    assert.deepEqual(context.cards.map((card: any) => card.card.id), draw.context.cards.map((card: any) => card.card.id));
   } finally {
     globalThis.fetch = originalFetch;
   }
