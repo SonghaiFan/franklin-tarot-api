@@ -1,37 +1,309 @@
 # Franklin Tarot API
 
-Read-only tarot data for applications and AI agents: 78 bilingual cards and the spread definitions, with positions and card pools. REST and the UI-free Agent MCP use the same service implementation. The calling app draws the cards and owns the reading; the service has no database or model API dependency.
+Read-only tarot data for applications and AI agents: 78 bilingual cards (English and Simplified Chinese) and 11 spread definitions, with positions and card pools. REST and the UI-free Agent MCP share one service implementation. Your app draws the cards and owns the reading; the service has no database and no model API dependency.
 
-只读塔罗数据服务：提供牌库和牌阵定义（含位置与牌池）。抽牌、流程和状态由调用方应用负责。
+只读塔罗数据服务：提供 78 张中英文牌和 11 种牌阵定义（含位置与牌池）。抽牌、正逆位、流程和状态由调用方应用负责。
+
+- **Base URL:** `https://tarot-api.songhai.site`
+- **Auth:** none, no key required
+- **Locales:** `en`, `zh-CN` (pass `?locale=`, default `zh-CN`)
+- **Methods:** `GET` only; anything else returns `405`
+- **Docs:** [tarot-api.songhai.site](https://tarot-api.songhai.site/) · [OpenAPI](https://tarot-api.songhai.site/openapi.json) · [Agent guide](https://tarot-api.songhai.site/agents.md)
+
+## Quick start
+
+Load the deck and the spreads once. Everything a reading needs comes from these two calls.
+
+```js
+const API = "https://tarot-api.songhai.site";
+
+const [{ cards }, { spreads }] = await Promise.all([
+  fetch(`${API}/api/v1/cards?locale=en`).then((response) => response.json()),
+  fetch(`${API}/api/v1/spreads?locale=en`).then((response) => response.json()),
+]);
+
+cards.length;   // 78
+spreads.length; // 11
+```
+
+Then draw in your own app. Each spread lists one card pool per position; take one card from each pool, never repeat a card, and choose upright or reversed yourself:
+
+```js
+const inPool = (card, pool) => ({
+  FULL: true,
+  MAJOR: card.suit === null,
+  MINOR_PIP: card.suit !== null && card.rank <= 10,
+  COURT: card.suit !== null && card.rank >= 11,
+  SUIT_WANDS: card.suit === "WANDS",
+  SUIT_CUPS: card.suit === "CUPS",
+  SUIT_SWORDS: card.suit === "SWORDS",
+  SUIT_PENTACLES: card.suit === "PENTACLES",
+})[pool];
+
+function draw(spread, deck, reversedProbability = 0.4) {
+  const used = new Set();
+  return spread.cardPools.map((pool, index) => {
+    const options = deck.filter((card) => !used.has(card.id) && inPool(card, pool));
+    const card = options[Math.floor(Math.random() * options.length)];
+    used.add(card.id);
+    const reversed = Math.random() < reversedProbability;
+    return {
+      position: spread.labels[index],
+      card: card.name,
+      reversed,
+      meaning: reversed ? card.meanings.reversed.en : card.meanings.upright.en,
+    };
+  });
+}
+
+draw(spreads.find((spread) => spread.id === "COURT"), cards);
+// For example:
+// [
+//   { position: "Situation (Pip)", card: "Five of Swords", reversed: false, meaning: "…" },
+//   { position: "Persona (Court)", card: "Queen of Cups",  reversed: true,  meaning: "…" },
+//   { position: "Cause (Major)",   card: "The Tower",      reversed: false, meaning: "…" }
+// ]
+```
+
+## REST endpoints
+
+| Endpoint | Returns |
+| --- | --- |
+| [`GET /api/v1/cards/{id}`](#get-one-card) | One card |
+| [`GET /api/v1/cards`](#list-or-search-cards) | Every card, or those matching `q`, `arcana`, `suit` |
+| [`GET /api/v1/cards/random`](#random-cards) | `n` distinct random cards, without orientation |
+| [`GET /api/v1/spreads`](#spreads) | The 11 spreads with positions, labels and card pools |
+| `GET /health` | `{ "status": "ok", "service": "franklin-tarot-api", "apiVersion": "1" }` |
+| `GET /openapi.json` | OpenAPI 3.1 schema |
+
+### Get one card
+
+Card IDs are stable: `maj00`–`maj21` for the major arcana, and `wandsNN`, `cupsNN`, `swordsNN`, `pentsNN` (`01`–`14`) for the minor arcana.
+
+```sh
+curl "https://tarot-api.songhai.site/api/v1/cards/maj00?locale=en"
+```
+
+```jsonc
+{
+  "id": "maj00",
+  "name": "The Fool",                        // in the requested locale
+  "names": { "en": "The Fool", "zh-CN": "愚人" },
+  "arcana": "MAJOR",                         // MAJOR | MINOR
+  "suit": null,                              // WANDS | CUPS | SWORDS | PENTACLES, null for major arcana
+  "rank": 0,                                 // major 0–21; minor 1–10 pips, 11–14 Page, Knight, Queen, King
+  "imageUrls": {
+    "redraw": "https://tarot-api.songhai.site/images/cards/maj00.webp?v=350d0b7d530942dd",
+    "dreamy": "https://tarot-api.songhai.site/images/cards_dreamy/maj00.webp?v=350d0b7d530942dd",
+    "original": "https://tarot-api.songhai.site/images/cards_rws_original/maj00.webp?v=350d0b7d530942dd"
+  },
+  "keywords": {
+    "en": ["Infinite potential", "New beginnings", "Childlike heart", "Innocence", "Freedom", "Adventure"],
+    "zh-CN": ["无限潜力", "新的开始", "赤子之心", "纯真", "自由", "冒险"]
+  },
+  "description": { "en": "The Fool, Mate, or Unwise Man. …", "zh-CN": "他是追寻经验的灵魂，…" },
+  "meanings": {
+    "upright":  { "en": "Starting from zero; luck in gambling; unconventionality; …", "zh-CN": "从零开始; 好赌运; 不墨守成规; …" },
+    "reversed": { "en": "Instability; reckless gambles ending in failure; …",       "zh-CN": "不安定; 孤注一掷会失败; …" }
+  },
+  "source": {
+    "dataset": "frankie-tarot-ground-truth",
+    "datasetVersion": "350d0b7d530942dd",
+    "note": "Project-curated data. Per-field source attribution has not been independently verified."
+  }
+}
+```
+
+A minor arcana card looks the same, with a suit and a rank:
+
+```sh
+curl "https://tarot-api.songhai.site/api/v1/cards/cups12?locale=zh-CN"
+```
+
+```jsonc
+{ "id": "cups12", "name": "圣杯骑士", "names": { "en": "Knight of Cups", "zh-CN": "圣杯骑士" },
+  "arcana": "MINOR", "suit": "CUPS", "rank": 12, … }
+```
+
+### List or search cards
+
+With no filters, returns all 78 cards in catalog order. `q` searches names, keywords, descriptions and meanings in the requested locale; `arcana` and `suit` narrow the result. There is no pagination.
+
+```sh
+curl "https://tarot-api.songhai.site/api/v1/cards?q=moon&locale=en"
+curl "https://tarot-api.songhai.site/api/v1/cards?suit=CUPS&locale=en"     # 14 cards
+curl "https://tarot-api.songhai.site/api/v1/cards?arcana=MAJOR&locale=en"  # 22 cards
+```
+
+```jsonc
+{
+  "cards": [
+    { "id": "maj18", "name": "The Moon", … },
+    { "id": "maj19", "name": "The Sun", … }
+  ],
+  "locale": "en"
+}
+```
+
+### Random cards
+
+`n` distinct cards in random order (1–78, default 1). Cards carry no orientation: your app decides upright or reversed. Responses are not cached.
+
+```sh
+curl "https://tarot-api.songhai.site/api/v1/cards/random?n=3&locale=en"
+```
+
+```jsonc
+// For example:
+{
+  "cards": [
+    { "id": "swords07", "name": "Seven of Swords", … },
+    { "id": "maj17", "name": "The Star", … },
+    { "id": "pents01", "name": "Ace of Pentacles", … }
+  ],
+  "locale": "en"
+}
+```
+
+### Spreads
+
+```sh
+curl "https://tarot-api.songhai.site/api/v1/spreads?locale=en"
+```
+
+```jsonc
+{
+  "spreads": [
+    {
+      "id": "COURT",
+      "name": "Court Card Behavior",
+      "names": { "en": "Court Card Behavior", "zh-CN": "宫廷行为模式" },
+      "description": "A three-card behavior pattern spread that reveals the situation, the role or persona you adopt, …",
+      "cardCount": 3,
+      "labels": ["Situation (Pip)", "Persona (Court)", "Cause (Major)"],   // in draw order
+      "labelsByLocale": { "en": [ … ], "zh-CN": ["情境(小阿卡纳)", "角色(宫廷牌)", "根因(大阿卡纳)"] },
+      "cardPools": ["MINOR_PIP", "COURT", "MAJOR"],                          // one per position
+      "layout": {
+        "type": "absolute",                                                  // "flex" spreads lay out in a row; positions is null
+        "positions": [
+          { "x": -62, "y": 46, "labelPosition": "top" },
+          { "x": 0, "y": -56, "labelPosition": "bottom" },
+          { "x": 62, "y": 46, "labelPosition": "top" }
+        ]
+      },
+      "interpretationInstruction": "… Strictly follow this narrative formula: \"When [Card 1 Situation] arises, you become [Card 2 Persona] because of [Card 3 Cause].\" …",
+      "interpretationInstructions": { "en": "…", "zh-CN": "…" },
+      "defaultQuestions": { "en": ["What do I become when I am under pressure?", …], "zh-CN": [ … ] }
+    },
+    …
+  ],
+  "locale": "en"
+}
+```
+
+The 11 spreads and their pools:
+
+| ID | Cards | Card pools |
+| --- | --- | --- |
+| `SINGLE` | 1 | `FULL` |
+| `THREE` | 3 | `FULL` × 3 |
+| `COURT` | 3 | `MINOR_PIP`, `COURT`, `MAJOR` |
+| `FOUR` | 4 | `FULL` × 4 |
+| `FIVE` | 5 | `FULL` × 5 |
+| `TIMELINE` | 5 | `FULL` × 5 |
+| `DIMENSION` | 5 | `SUIT_CUPS`, `SUIT_PENTACLES`, `SUIT_SWORDS`, `SUIT_WANDS`, `MAJOR` |
+| `GOALS` | 7 | `FULL` × 7 |
+| `CELTIC` | 10 | `FULL` × 10 |
+| `RELATION` | 11 | `FULL` × 11 |
+| `YEARLY` | 15 | `FULL` × 15 |
+
+### Card pools
+
+| Pool | Cards |
+| --- | --- |
+| `FULL` | All 78 cards |
+| `MAJOR` | `suit` is `null` (22 cards) |
+| `MINOR_PIP` | Minor arcana with `rank` 1–10 (40 cards) |
+| `COURT` | Minor arcana with `rank` 11–14: Page, Knight, Queen, King (16 cards) |
+| `SUIT_WANDS`, `SUIT_CUPS`, `SUIT_SWORDS`, `SUIT_PENTACLES` | All 14 cards whose `suit` matches |
+
+### Images
+
+Every card has three artwork styles in `imageUrls`, as WebP served from the API origin. Images allow any origin (`Access-Control-Allow-Origin: *`) and are cached for a year as immutable; the `?v=` dataset version changes whenever the artwork does.
+
+```html
+<img src="https://tarot-api.songhai.site/images/cards/maj00.webp?v=350d0b7d530942dd" alt="The Fool">
+```
+
+### Errors
+
+Errors share one envelope with a stable `code`:
+
+```sh
+curl "https://tarot-api.songhai.site/api/v1/cards/random?n=0"
+```
+
+```json
+{
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "The request does not match the API schema.",
+    "details": [{ "path": "n", "message": "Too small: expected number to be >=1" }]
+  }
+}
+```
+
+| Status | `code` | When |
+| --- | --- | --- |
+| `400` | `VALIDATION_ERROR` | A parameter is out of range, such as `n=0` or `locale=fr` |
+| `404` | `CARD_NOT_FOUND` | No card has that ID, for example `/api/v1/cards/nope` |
+| `404` | `NOT_FOUND` | No route matches |
+| `405` | `METHOD_NOT_ALLOWED` | Any method other than `GET` |
+
+## Agent MCP
+
+`https://tarot-api.songhai.site/mcp/agent` is a stateless Streamable HTTP MCP server with the same data as REST.
+
+| Tool | Arguments | Returns |
+| --- | --- | --- |
+| `search_tarot_cards` | `q`, `arcana`, `suit`, `locale` (all optional) | `{ cards, locale }`, every match |
+| `get_tarot_card` | `cardId`, `locale` | `{ card }` |
+| `get_random_tarot_cards` | `n` (1–78, default 1), `locale` | `{ cards, locale }`, without orientation |
+| `list_tarot_spreads` | `locale` | `{ spreads, locale }` |
+
+Connect it to an MCP client:
+
+```json
+{
+  "mcpServers": {
+    "franklin-tarot": { "type": "http", "url": "https://tarot-api.songhai.site/mcp/agent" }
+  }
+}
+```
+
+Or call a tool directly:
+
+```sh
+curl https://tarot-api.songhai.site/mcp/agent \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"get_tarot_card","arguments":{"cardId":"maj00","locale":"en"}}}'
+```
+
+`npm run mcp:agent` runs the same server over stdio.
 
 ## Run locally
 
 ```sh
 npm ci
-npm run api
+npm run api            # REST and MCP at http://127.0.0.1:3001
 ```
-
-At `http://127.0.0.1:3001`:
-
-| Endpoint | Purpose |
-| --- | --- |
-| `GET /health` | Service health |
-| `GET /openapi.json` | OpenAPI 3.1 schema |
-| `GET /api/v1/cards` | All 78 bilingual cards, or those matching `q`, `arcana`, `suit` |
-| `GET /api/v1/cards/random?n=3` | `n` distinct random cards, without orientation |
-| `GET /api/v1/cards/{id}` | Card detail; stable IDs such as `maj00` |
-| `GET /api/v1/spreads` | 11 real spreads and position rules |
-| `/mcp/agent` | Stateless Streamable HTTP MCP |
 
 ```sh
-curl -sS "http://127.0.0.1:3001/api/v1/spreads?locale=en"
+curl "http://127.0.0.1:3001/api/v1/spreads?locale=en"
 ```
 
-Each spread gives one card pool per position (`cardPools`); `public/agents.md` defines the pool values. Drawing, orientation and reading state belong to the calling app.
-
-MCP tools: `search_tarot_cards`, `get_tarot_card`, `list_tarot_spreads`, `get_random_tarot_cards`. They execute the same validated service logic in-process, without making an HTTP request back to their own deployment. `npm run mcp:agent` provides the stdio transport.
-
-## Build, run and deploy
+## Build, test and deploy
 
 ```sh
 npm run api:test
@@ -42,13 +314,9 @@ npm run api
 node scripts/api-smoke.mjs http://127.0.0.1:3001
 ```
 
-One build serves documentation, REST, MCP, OpenAPI and card artwork. Vercel deploys the repository using its single `vercel.json`; GitHub Actions runs checks. See [deployment instructions](docs/api-deployment.md).
+One build serves documentation, REST, MCP, OpenAPI and card artwork. Vercel deploys the repository using its single `vercel.json`; GitHub Actions runs checks. See [deployment instructions](docs/api-deployment.md). `npm run dev` previews the documentation site while editing.
 
-`npm run dev` previews documentation during editing. After building, `npm run api` serves the complete site locally. The online example calls the current origin.
-
-The independent [Frankie Tarot app](https://github.com/SonghaiFan/frankie-tarot) is the reference consumer, live at [tarot.songhai.site](https://tarot.songhai.site). Browsers use REST; its plugin adapter calls this service through MCP. There are no sibling source imports or local path dependencies.
-
-Public API: `https://tarot-api.songhai.site` · Agent MCP: `/mcp/agent` · [Developer documentation](https://tarot-api.songhai.site/).
+The independent [Frankie Tarot app](https://github.com/SonghaiFan/frankie-tarot) is the reference consumer, live at [tarot.songhai.site](https://tarot.songhai.site). It loads cards and spreads over REST and draws locally. There are no sibling source imports or local path dependencies.
 
 Only the v1 API and stable card IDs are supported.
 
