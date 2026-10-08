@@ -35,5 +35,12 @@
         }
       ]
     }
+  ],
+  "redirects": [
+    {
+      "source": "/",
+      "destination": "https://songhaifan.github.io/franklin-tarot-api/",
+      "permanent": false
+    }
   ]
 }
