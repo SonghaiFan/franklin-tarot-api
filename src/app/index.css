@@ -1,3 +1,32 @@
 @import "tailwindcss";
-@theme { --font-cinzel: "Cinzel", serif; --font-noto: "Noto Serif SC", serif; }
-html { scroll-behavior: smooth; } body { margin: 0; background: #f3f3ee; } button, a { -webkit-tap-highlight-color: transparent; }
+
+@theme {
+  --font-cinzel: "Cinzel", serif;
+  --font-noto: "Noto Serif SC", serif;
+  --font-display: "Jost", "Noto Serif SC", ui-sans-serif, sans-serif;
+}
+
+html { scroll-behavior: smooth; }
+body { margin: 0; background: #030308; color: #f0ede8; font-family: var(--font-noto); }
+button, a { -webkit-tap-highlight-color: transparent; }
+
+/* Keep the API reference a document while the Frankie app uses a locked canvas. */
+html:has(.api-docs-shell), body:has(.api-docs-shell), #root:has(.api-docs-shell) {
+  height: auto;
+  min-height: 100%;
+  overflow: visible;
+}
+
+.api-docs-shell { font-family: var(--font-display); }
+
+/* Subtle film grain shared with the Frankie app. */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+  opacity: .038;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 200px 200px;
+}

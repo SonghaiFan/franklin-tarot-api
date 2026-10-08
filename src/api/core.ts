@@ -97,10 +97,13 @@ export function listSpreads(locale: ApiLocale) {
       labels,
       labelsByLocale: spread.layout.type === "absolute" ? spread.layout.positionLabels : spread.layout.labels,
       cardPools: constraints,
+      layout: {
+        type: spread.layout.type,
+        positions: spread.layout.positions,
+      },
       interpretationInstruction: localeText(spread.interpretationInstruction, locale),
       interpretationInstructions: spread.interpretationInstruction,
       defaultQuestions: spread.defaultQuestions ?? { en: [], "zh-CN": [] },
-      layoutType: spread.layout.type,
     };
   });
 }

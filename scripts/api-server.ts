@@ -29,6 +29,18 @@ const server = createServer(async (incoming, outgoing) => {
         }
         return;
       }
+      const brandAsset = pathname.match(/^\/(franklin|favicon)\.svg$/);
+      if (incoming.method === "GET" && brandAsset) {
+        try {
+          const bytes = await readFile(join(process.cwd(), "dist", `${brandAsset[1]}.svg`));
+          outgoing.writeHead(200, { "Content-Type": "image/svg+xml; charset=utf-8", "X-Content-Type-Options": "nosniff" });
+          outgoing.end(bytes);
+        } catch {
+          outgoing.writeHead(404, { "Content-Type": "text/plain" });
+          outgoing.end("Brand asset was not found.");
+        }
+        return;
+      }
       const image = (incoming.url || "").match(/^\/images\/(cards|cards_dreamy|cards_rws_original)\/([a-zA-Z0-9_-]+\.webp)(?:\?v=[a-f0-9]+)?$/);
       if (incoming.method === "GET" && image) {
         try {

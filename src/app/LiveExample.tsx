@@ -28,16 +28,22 @@ export default function LiveExample({ origin }: { origin: string }) {
     } catch (e) { setError(e instanceof Error ? e.message : "Request failed. Retry uses the same seed."); }
     finally { setBusy(false); }
   }
-  return <div className="mb-6 rounded-[14px] border border-black/10 bg-white/60 p-5">
-    <h3 className="text-base font-semibold">Try the real API · 在线体验</h3>
-    <p className="mt-2 text-sm leading-6 text-[#68706c]">This browser calls Franklin directly. Replay keeps the same seed; follow-up uses the returned snapshot. 实际请求独立服务，重试保留同一次抽牌。</p>
-    <div className="my-4 flex flex-wrap gap-3">
-      <button disabled={busy} onClick={() => void run()} className="rounded-full bg-[#202825] px-4 py-2 text-sm text-white disabled:opacity-50">{busy ? "Loading…" : result ? "Replay same seed" : error ? "Retry same request" : "Draw three cards"}</button>
-      {result && <button disabled={busy} onClick={() => void run(true)} className="rounded-full border border-black/20 px-4 py-2 text-sm disabled:opacity-50">Follow up without redrawing</button>}
+  const button = "border px-4 py-2.5 text-[10px] uppercase tracking-[0.3em] transition-colors duration-300 disabled:cursor-not-allowed disabled:opacity-30";
+  return <div className="mb-8 border border-white/10">
+    <div className="flex items-center justify-between border-b border-white/10 px-5 py-3">
+      <h3 className="text-[10px] font-light uppercase tracking-[0.3em] text-white/80">Try the real API</h3>
+      <span className="text-[10px] tracking-[0.3em] text-neutral-500">在线体验</span>
     </div>
-    {error && <p role="alert" className="my-3 text-sm text-red-800">{error}</p>}
-    {result && <div className="grid grid-cols-3 gap-3">{result.context.cards.map(({ card, orientation }) => <figure key={card.id} className="min-w-0 text-center"><img src={card.imageUrls.original} alt={card.name} className={`mx-auto w-full max-w-28 rounded-sm ${orientation === "REVERSED" ? "rotate-180" : ""}`} /><figcaption className="mt-3 text-xs leading-5">{card.name}<br />{orientation}</figcaption></figure>)}</div>}
-    {lastPath && <p className="mt-4 break-all font-mono text-xs text-[#68706c]" aria-live="polite">POST {origin}{lastPath}{context ? " · Same reading verified" : ""}</p>}
-    {result && <details className="mt-3 text-sm"><summary className="cursor-pointer">Inspect JSON response</summary><pre className="mt-3 max-h-80 overflow-auto rounded-lg bg-[#0b0e0e] p-4 text-xs text-white">{JSON.stringify(context || result, null, 2)}</pre></details>}
+    <div className="p-5 sm:p-6">
+      <p className="max-w-[64ch] text-[12px] font-light leading-6 text-neutral-400">This browser calls Franklin directly. Replay keeps the same seed; follow-up uses the returned snapshot.<br /><span className="text-neutral-500">实际请求独立服务，重试保留同一次抽牌。</span></p>
+      <div className="mt-6 flex flex-wrap gap-3">
+        <button disabled={busy} onClick={() => void run()} className={`${button} border-white bg-white text-black hover:bg-white/85`}>{busy ? "Loading…" : result ? "Replay same seed" : error ? "Retry same request" : "Draw three cards"}</button>
+        {result && <button disabled={busy} onClick={() => void run(true)} className={`${button} border-white/20 text-neutral-400 hover:border-white/50 hover:text-white`}>Follow up without redrawing</button>}
+      </div>
+      {error && <p role="alert" className="mt-4 text-[12px] text-red-200">{error}</p>}
+      {result && <div className="mt-8 grid grid-cols-3 gap-3 sm:gap-6">{result.context.cards.map(({ card, orientation }) => <figure key={card.id} className="min-w-0 text-center"><div className="mx-auto w-full max-w-28 border border-white/15 p-1"><img src={card.imageUrls.original} alt={card.name} className={`w-full ${orientation === "REVERSED" ? "rotate-180" : ""}`} /></div><figcaption className="mt-3"><span className="block font-cinzel text-[10px] uppercase tracking-[0.12em] text-white/80">{card.name}</span><span className="mt-1 block text-[9px] uppercase tracking-[0.24em] text-neutral-500">{orientation}</span></figcaption></figure>)}</div>}
+      {lastPath && <p className="mt-6 break-all border-t border-white/10 pt-4 font-mono text-[10px] text-neutral-500" aria-live="polite">POST {origin}{lastPath}{context ? " · Same reading verified" : ""}</p>}
+      {result && <details className="group mt-4"><summary className="cursor-pointer list-none text-[10px] uppercase tracking-[0.3em] text-neutral-500 transition-colors duration-300 hover:text-white [&::-webkit-details-marker]:hidden">{"+ "}Inspect JSON response</summary><pre className="mt-4 max-h-80 overflow-auto border border-white/10 bg-black/40 p-4 font-mono text-[11px] leading-[1.8] text-neutral-300">{JSON.stringify(context || result, null, 2)}</pre></details>}
+    </div>
   </div>;
 }
