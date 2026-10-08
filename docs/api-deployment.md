@@ -24,7 +24,7 @@ Verify the Ready deployment before promoting it. From the repository:
 ```sh
 node scripts/api-smoke.mjs https://DEPLOYMENT.vercel.app --vercel
 vercel promote https://DEPLOYMENT.vercel.app --yes
-node scripts/api-smoke.mjs https://franklin-tarot-api.vercel.app
+node scripts/api-smoke.mjs https://tarot-api.songhai.site
 ```
 
 The last check is ordinary unauthenticated HTTP: passing through a signed-in CLI alone does not prove public availability.

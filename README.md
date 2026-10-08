@@ -54,7 +54,7 @@ See [deployment instructions and verification status](docs/api-deployment.md). D
 
 The independent [Frankie Tarot app](https://github.com/SonghaiFan/frankie-tarot) is the reference consumer, live at [tarot.songhai.site](https://tarot.songhai.site). Browsers use REST; its plugin adapter calls this service through MCP. There are no sibling source imports or local path dependencies.
 
-Public API: `https://franklin-tarot-api.vercel.app` · Agent MCP: `/mcp/agent` · [Developer documentation](https://songhaifan.github.io/franklin-tarot-api/).
+Public API: `https://tarot-api.songhai.site` · Agent MCP: `/mcp/agent` · [Developer documentation](https://songhaifan.github.io/franklin-tarot-api/).
 
 `npm run cli -- "Question" --spread THREE --locale en --json` provides the developer CLI. Compatibility routes `/api/tarot/spreads` and `/api/tarot/predict` preserve the previous response envelope and the legacy `AUTO` → `SINGLE` behavior; new integrations should use v1. Custom cards are validated and their meanings come from the server dataset.
 

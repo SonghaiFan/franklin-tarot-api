@@ -8,6 +8,6 @@ const { values, positionals } = parseArgs({ allowPositionals: true, options: {
 if (values.help) console.log('Franklin Tarot CLI: npm run cli -- "Question" [--spread THREE] [--locale en] [--seed value] [--json] [--list-spreads]');
 else if (values["list-spreads"]) console.log(JSON.stringify(listSpreads(localeSchema.parse(values.locale)), null, 2));
 else {
-  const result = legacyReading({ question: positionals.join(" "), spread: values.spread, locale: values.locale, seed: values.seed }, "https://franklin-tarot-api.vercel.app");
+  const result = legacyReading({ question: positionals.join(" "), spread: values.spread, locale: values.locale, seed: values.seed }, "https://tarot-api.songhai.site");
   console.log(values.json ? JSON.stringify(result, null, 2) : result.prompts.readingPrompt);
 }

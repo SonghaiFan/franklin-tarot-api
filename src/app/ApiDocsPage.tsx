@@ -2,7 +2,7 @@ import { useState } from "react";
 import LiveExample from "./LiveExample";
 import { ArrowUpRight, Check, ChevronDown, Copy, Github, Menu, Moon, Sparkles } from "lucide-react";
 
-const API_BASE = "https://franklin-tarot-api.vercel.app";
+const API_BASE = "https://tarot-api.songhai.site";
 
 const drawRequest = `// Create and persist the seed before sending if retries must replay this draw.
 const seed = crypto.randomUUID();
