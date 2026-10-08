@@ -3,6 +3,7 @@ import LiveExample from "./LiveExample";
 import SpreadLayout, { type Spread } from "./SpreadLayout";
 import TarotCard from "./TarotCard";
 import { ArrowUpRight, Check, ChevronDown, Copy, Github, Menu, X } from "lucide-react";
+import { COPY, type Locale } from "./copy";
 
 const API_BASE = "https://tarot-api.songhai.site";
 
@@ -54,7 +55,7 @@ const drawResponse = `{
 // In dev the page talks to the deployed API, which also serves the card images.
 const API_ORIGIN = import.meta.env.DEV ? API_BASE : window.location.origin;
 
-const NAV = ["Overview", "Quickstart", "Endpoints", "Spreads", "Response"];
+const SECTION_IDS = ["overview", "quickstart", "endpoints", "spreads", "response"];
 
 /** The app's small tracked caps: section eyebrows, list headers, metadata. */
 function Eyebrow({ children, className = "" }: { children: React.ReactNode; className?: string }) {
@@ -163,14 +164,18 @@ function useActiveSection(ids: string[]) {
 const SECTION_IDS = NAV.map((item) => item.toLowerCase());
 
 export default function ApiDocsPage() {
+  const [locale, setLocale] = useState<Locale>(() => localStorage.getItem("franklin-docs-locale") === "zh-CN" ? "zh-CN" : "en");
   const [menuOpen, setMenuOpen] = useState(false);
   const [spreads, setSpreads] = useState<Spread[] | null>(null);
   const [spreadError, setSpreadError] = useState(false);
   const active = useActiveSection(SECTION_IDS);
+  const copy = COPY[locale];
 
   useEffect(() => {
     let isMounted = true;
-    fetch(`${API_ORIGIN}/api/v1/spreads?locale=en`)
+    setSpreads(null);
+    setSpreadError(false);
+    fetch(`${API_ORIGIN}/api/v1/spreads?locale=${locale}`)
       .then((response) => {
         if (!response.ok) throw new Error("Could not load spread layouts.");
         return response.json();
@@ -181,7 +186,12 @@ export default function ApiDocsPage() {
       })
       .catch(() => { if (isMounted) setSpreadError(true); });
     return () => { isMounted = false; };
-  }, []);
+  }, [locale]);
+
+  const changeLocale = (next: Locale) => {
+    setLocale(next);
+    localStorage.setItem("franklin-docs-locale", next);
+  };
 
   return (
     <div className="api-docs-shell min-h-screen bg-[#030308] text-neutral-200 selection:bg-white/20">
@@ -192,12 +202,13 @@ export default function ApiDocsPage() {
             <span className="hidden border-l border-white/15 pl-4 text-[9px] font-light tracking-[0.42em] text-white/40 sm:block">API</span>
           </a>
           <nav className="hidden items-center gap-8 lg:flex">
-            {NAV.map((item) => (
-              <a key={item} href={`#${item.toLowerCase()}`} className={`text-[10px] font-light uppercase tracking-[0.3em] transition-colors duration-300 ${active === item.toLowerCase() ? "text-white" : "text-white/40 hover:text-white/80"}`}>{item}</a>
+            {copy.nav.map((item, index) => (
+              <a key={SECTION_IDS[index]} href={`#${SECTION_IDS[index]}`} className={`text-[12px] font-light tracking-[0.12em] transition-colors duration-300 ${active === SECTION_IDS[index] ? "text-white" : "text-white/40 hover:text-white/80"}`}>{item}</a>
             ))}
           </nav>
           <div className="flex items-center gap-2">
-            <a href="https://github.com/SonghaiFan/franklin-tarot-api" className="hidden items-center gap-2 border border-white/15 px-3.5 py-2 text-[10px] uppercase tracking-[0.2em] text-neutral-400 transition-colors duration-300 hover:border-white/40 hover:text-white sm:flex"><Github size={13} strokeWidth={1.25} /> GitHub</a>
+            <button onClick={() => changeLocale(locale === "en" ? "zh-CN" : "en")} className="border border-white/15 px-3.5 py-2 text-[12px] tracking-wide text-neutral-300 transition-colors duration-300 hover:border-white/40 hover:text-white" aria-label={locale === "en" ? "切换到简体中文" : "Switch to English"}>{locale === "en" ? "中文" : "EN"}</button>
+            <a href="https://github.com/SonghaiFan/franklin-tarot-api" className="hidden items-center gap-2 border border-white/15 px-3.5 py-2 text-[12px] uppercase tracking-[0.12em] text-neutral-400 transition-colors duration-300 hover:border-white/40 hover:text-white sm:flex"><Github size={14} strokeWidth={1.25} /> GitHub</a>
             <button onClick={() => setMenuOpen(!menuOpen)} className="grid size-9 place-items-center border border-white/15 text-white/70 lg:hidden" aria-label="Toggle navigation" aria-expanded={menuOpen}>
               {menuOpen ? <X size={15} strokeWidth={1.25} /> : <Menu size={15} strokeWidth={1.25} />}
             </button>
@@ -205,7 +216,7 @@ export default function ApiDocsPage() {
         </div>
         {menuOpen && (
           <nav className="border-t border-white/10 px-5 py-2 lg:hidden">
-            {NAV.map((item) => <a onClick={() => setMenuOpen(false)} key={item} href={`#${item.toLowerCase()}`} className="block border-b border-white/5 py-3.5 text-[10px] uppercase tracking-[0.3em] text-white/60 last:border-b-0">{item}</a>)}
+            {copy.nav.map((item, index) => <a onClick={() => setMenuOpen(false)} key={SECTION_IDS[index]} href={`#${SECTION_IDS[index]}`} className="block border-b border-white/5 py-3.5 text-[13px] tracking-[0.12em] text-white/60 last:border-b-0">{item}</a>)}
           </nav>
         )}
       </header>
