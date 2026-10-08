@@ -1,0 +1,39 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "buildCommand": "npm run api:bundle",
+  "outputDirectory": "public",
+  "rewrites": [
+    {
+      "source": "/api/v1/:path*",
+      "destination": "/api/rest"
+    },
+    {
+      "source": "/api/tarot/:path*",
+      "destination": "/api/rest"
+    },
+    {
+      "source": "/health",
+      "destination": "/api/health"
+    },
+    {
+      "source": "/mcp/agent",
+      "destination": "/api/mcp-agent"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/images/:path*",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    }
+  ]
+}

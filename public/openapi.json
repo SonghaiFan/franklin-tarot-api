@@ -1,0 +1,25 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Franklin Tarot API",
+    "version": "1.0.0",
+    "description": "Stateless tarot card catalog, spread metadata, seeded draws, and verified reading context for apps and AI agents. Tarot is for symbolic reflection, not factual prediction."
+  },
+  "servers": [{ "url": "https://api.example.com", "description": "Replace with your deployment URL" }],
+  "paths": {
+    "/health": { "get": { "operationId": "health", "responses": { "200": { "description": "Service status" } } } },
+    "/api/v1/cards": { "get": { "operationId": "searchTarotCards", "parameters": [{ "name": "q", "in": "query", "schema": { "type": "string" } }, { "name": "arcana", "in": "query", "schema": { "enum": ["MAJOR", "MINOR"] } }, { "name": "suit", "in": "query", "schema": { "enum": ["WANDS", "CUPS", "SWORDS", "PENTACLES"] } }, { "name": "locale", "in": "query", "schema": { "enum": ["en", "zh-CN"], "default": "zh-CN" } }, { "name": "limit", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 78, "default": 20 } }, { "name": "offset", "in": "query", "schema": { "type": "integer", "minimum": 0, "default": 0 } }], "responses": { "200": { "description": "Paginated cards, total, and datasetVersion" }, "400": { "$ref": "#/components/responses/ApiError" } } } },
+    "/api/v1/cards/{id}": { "get": { "operationId": "getTarotCard", "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string", "examples": ["maj00"] } }, { "name": "locale", "in": "query", "schema": { "enum": ["en", "zh-CN"], "default": "zh-CN" } }], "responses": { "200": { "description": "Bilingual card data and versioned image URLs" }, "404": { "$ref": "#/components/responses/ApiError" } } } },
+    "/api/v1/spreads": { "get": { "operationId": "listTarotSpreads", "parameters": [{ "name": "locale", "in": "query", "schema": { "enum": ["en", "zh-CN"], "default": "zh-CN" } }], "responses": { "200": { "description": "11 real spreads, position labels, card pools, and interpretation goals" } } } },
+    "/api/v1/readings/draw": { "post": { "operationId": "drawTarotReading", "description": "The caller generates and retains the seed before sending if retries must reproduce the same reading. AUTO is not supported.", "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DrawRequest" }, "example": { "question": "What deserves my attention today?", "spread": "THREE", "locale": "en", "seed": "caller-generated-retry-token" } } } }, "responses": { "200": { "description": "Reading snapshot plus orientation-aware context" }, "400": { "$ref": "#/components/responses/ApiError" } } } },
+    "/api/v1/readings/context": { "post": { "operationId": "getTarotReadingContext", "description": "Revalidates the caller-held snapshot and reconstructs card meanings from the server dataset. No reading is persisted.", "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ContextRequest" } } } }, "responses": { "200": { "description": "Validated context for follow-up interpretation" }, "409": { "$ref": "#/components/responses/ApiError" } } } }
+  },
+  "components": {
+    "schemas": {
+      "DrawRequest": { "type": "object", "required": ["spread"], "additionalProperties": false, "properties": { "question": { "type": "string", "maxLength": 2000 }, "spread": { "type": "string", "description": "One ID returned by /api/v1/spreads; AUTO is not valid." }, "locale": { "enum": ["en", "zh-CN"], "default": "zh-CN" }, "seed": { "type": "string", "minLength": 1, "maxLength": 128 }, "reversedProbability": { "type": "number", "minimum": 0, "maximum": 1, "default": 0.4 } } },
+      "ContextRequest": { "type": "object", "required": ["reading"], "additionalProperties": false, "properties": { "reading": { "type": "object", "description": "The reading snapshot returned by draw; preserve it in caller state." }, "question": { "type": "string", "maxLength": 2000 }, "locale": { "enum": ["en", "zh-CN"], "default": "zh-CN" } } },
+      "ApiError": { "type": "object", "required": ["error"], "properties": { "error": { "type": "object", "required": ["code", "message"], "properties": { "code": { "type": "string" }, "message": { "type": "string" }, "details": {} } } } }
+    },
+    "responses": { "ApiError": { "description": "Structured API error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } } }
+  }
+}

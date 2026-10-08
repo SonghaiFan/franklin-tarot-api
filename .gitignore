@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.api-deploy/
+api/_bundles/
+.vercel/
+.env*
+!.env.example
+output/
+.playwright-cli/
+.DS_Store
+.server/
