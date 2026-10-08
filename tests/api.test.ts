@@ -3,7 +3,7 @@ import { test } from "node:test";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { createAgentMcpServer } from "../mcp/agent";
-import { getCard, listCards, listCardsQuerySchema, listSpreads, randomCards } from "../src/api/core";
+import { drawSpread, getCard, isInPool, listCards, listCardsQuerySchema, listSpreads, randomCards } from "../src/api/core";
 import { handleTarotApi } from "../src/api/http";
 
 const origin = "https://tarot.example";
@@ -23,6 +23,25 @@ test("catalog exposes 78 stable IDs with ranks and rejects numeric aliases", () 
   assert.equal(getCard("maj00", "en", origin)?.names.en, "The Fool");
   assert.equal(listSpreads("en").length, 11);
   assert.ok(listSpreads("en").every((spread) => spread.cardCount === spread.labels.length));
+});
+
+test("spread draws respect each position's pool and never repeat a card", () => {
+  for (const spread of listSpreads("en")) {
+    for (let round = 0; round < 50; round++) {
+      const draw = drawSpread(spread.id, "en", origin)!;
+      assert.equal(draw.cards.length, spread.cardCount);
+      assert.equal(new Set(draw.cards.map((item) => item.card.id)).size, spread.cardCount);
+      draw.cards.forEach((item, index) => {
+        assert.equal(item.positionIndex, index + 1);
+        assert.equal(item.positionLabel, spread.labels[index]);
+        assert.ok(isInPool(item.card, item.cardPool), `${item.card.id} in ${item.cardPool}`);
+        assert.ok(!("orientation" in item));
+      });
+    }
+  }
+  const court = drawSpread("COURT", "en", origin, () => 0)!;
+  assert.deepEqual(court.cards.map((item) => item.card.id), ["wands01", "wands11", "maj00"]);
+  assert.equal(drawSpread("AUTO", "en", origin), undefined);
 });
 
 test("random cards are distinct and bounded", () => {
@@ -45,6 +64,13 @@ test("REST routes are read-only and return structured errors", async () => {
   assert.equal(random.status, 200);
   assert.equal(random.headers.get("cache-control"), "no-store");
   assert.equal((await random.json() as any).cards.length, 3);
+  const draw = await handleTarotApi(new Request(`${origin}/api/v1/spreads/COURT/draw?locale=en`));
+  assert.equal(draw.status, 200);
+  assert.equal(draw.headers.get("cache-control"), "no-store");
+  assert.equal((await draw.json() as any).cards.length, 3);
+  const missing = await handleTarotApi(new Request(`${origin}/api/v1/spreads/NOPE/draw`));
+  assert.equal(missing.status, 404);
+  assert.equal((await missing.json() as any).error.code, "SPREAD_NOT_FOUND");
   for (const query of ["n=0", "n=79", "locale=fr"]) {
     const invalid = await handleTarotApi(new Request(`${origin}/api/v1/cards/random?${query}`));
     assert.equal(invalid.status, 400);
@@ -68,7 +94,7 @@ test("agent MCP serves the same cards and spreads as REST", async () => {
   await Promise.all([server.connect(serverTransport), client.connect(clientTransport)]);
   try {
     const tools = await client.listTools();
-    assert.deepEqual(tools.tools.map((tool) => tool.name).sort(), ["get_random_tarot_cards", "get_tarot_card", "list_tarot_spreads", "search_tarot_cards"]);
+    assert.deepEqual(tools.tools.map((tool) => tool.name).sort(), ["draw_tarot_spread", "get_random_tarot_cards", "get_tarot_card", "list_tarot_spreads", "search_tarot_cards"]);
     const card = await client.callTool({ name: "get_tarot_card", arguments: { cardId: "maj00", locale: "en" } });
     const rest = await handleTarotApi(new Request(`${apiOrigin}/api/v1/cards/maj00?locale=en`));
     assert.deepEqual((card.structuredContent as any).card, await rest.json());

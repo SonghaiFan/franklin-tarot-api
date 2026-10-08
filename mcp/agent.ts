@@ -1,13 +1,13 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { getCard, listCards, listCardsQuerySchema, listSpreads, randomCards, randomCardsQuerySchema } from "../src/api/core";
+import { drawSpread, getCard, listCards, listCardsQuerySchema, listSpreads, randomCards, randomCardsQuerySchema, SPREAD_IDS } from "../src/api/core";
 
 const localeSchema = z.enum(["en", "zh-CN"]).default("zh-CN");
 const cardsOutput = z.object({ cards: z.array(z.any()), locale: z.enum(["en", "zh-CN"]) });
 const spreadOutput = z.object({ spreads: z.array(z.any()), locale: z.enum(["en", "zh-CN"]) });
 export function createAgentMcpServer(apiOrigin = process.env.PUBLIC_API_BASE_URL || "http://127.0.0.1:3001") {
   const server = new McpServer({ name: "franklin-tarot-agent", version: "1.0.0" }, {
-    instructions: "Tools provide tarot card references and spread definitions (positions, labels and per-position card pools) for symbolic reflection. get_random_tarot_cards returns distinct random cards without orientation; spreads, orientation and the reading itself belong to the calling application. Do not present tarot as factual prediction, certainty, or probability. Card meanings are project-curated and field-level source attribution is not independently verified.",
+    instructions: "Tools provide tarot card references and spread definitions (positions, labels and per-position card pools) for symbolic reflection. draw_tarot_spread draws one card per position from a spread's card pools, and get_random_tarot_cards returns distinct random cards; neither decides orientation, which belongs to the calling application with the reading itself. Do not present tarot as factual prediction, certainty, or probability. Card meanings are project-curated and field-level source attribution is not independently verified.",
   });
 
   server.registerTool("search_tarot_cards", {
@@ -30,6 +30,17 @@ export function createAgentMcpServer(apiOrigin = process.env.PUBLIC_API_BASE_URL
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: false },
   }, async (args) => {
     const payload = randomCards(randomCardsQuerySchema.parse(args), apiOrigin);
+    return { structuredContent: payload, content: [{ type: "text", text: JSON.stringify(payload) }] };
+  });
+
+  server.registerTool("draw_tarot_spread", {
+    title: "Draw a tarot spread",
+    description: "Draw one random card per position of a spread, from each position's card pool, never repeating a card. Cards carry no orientation; the caller decides upright or reversed. Pick spreadId from list_tarot_spreads.",
+    inputSchema: { spreadId: z.enum(SPREAD_IDS as [string, ...string[]]), locale: localeSchema },
+    outputSchema: z.object({ spread: z.any(), cards: z.array(z.any()), locale: z.enum(["en", "zh-CN"]) }),
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+  }, async ({ spreadId, locale }) => {
+    const payload = drawSpread(spreadId, locale, apiOrigin)!;
     return { structuredContent: payload, content: [{ type: "text", text: JSON.stringify(payload) }] };
   });
 

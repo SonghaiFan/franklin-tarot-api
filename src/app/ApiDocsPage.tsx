@@ -11,8 +11,9 @@ const MCP_TOOLS: Array<[string, string]> = [
   ["get_tarot_card", "cardId, locale?"],
   ["get_random_tarot_cards", "n?, locale?"],
   ["list_tarot_spreads", "locale?"],
+  ["draw_tarot_spread", "spreadId, locale?"],
 ];
-const ERRORS: Array<[string, string]> = [["400", "VALIDATION_ERROR"], ["404", "CARD_NOT_FOUND"], ["404", "NOT_FOUND"], ["405", "METHOD_NOT_ALLOWED"]];
+const ERRORS: Array<[string, string]> = [["400", "VALIDATION_ERROR"], ["404", "CARD_NOT_FOUND"], ["404", "SPREAD_NOT_FOUND"], ["404", "NOT_FOUND"], ["405", "METHOD_NOT_ALLOWED"]];
 const IMAGE_STYLES = ["cards", "cards_dreamy", "cards_rws_original"];
 
 // In dev the page talks to the deployed API, which also serves the card images.
@@ -278,7 +279,7 @@ export default function ApiDocsPage() {
             <CodeBlock locale={locale} label={`${copy.loadLabel} · javascript`}>{example.load}</CodeBlock>
             <p className="mb-4 mt-10 max-w-[62ch] text-[15px] font-light leading-7 text-neutral-400">{copy.drawIntro}</p>
             <div className="grid gap-3">
-              <CodeBlock locale={locale} label={locale === "zh-CN" ? "2 · 在你的应用里抽牌 · javascript" : "2 · draw in your app · javascript"}>{example.draw}</CodeBlock>
+              <CodeBlock locale={locale} label={locale === "zh-CN" ? "2 · 抽牌，正逆位由你的应用决定 · javascript" : "2 · draw, then decide orientation · javascript"}>{example.draw}</CodeBlock>
               <CodeBlock locale={locale} label={copy.drawResultLabel}>{example.drawResult}</CodeBlock>
             </div>
             <p className="mt-6 max-w-[62ch] text-[15px] font-light leading-7 text-neutral-400">{copy.statelessNote}</p>
@@ -300,6 +301,9 @@ export default function ApiDocsPage() {
               <Endpoint locale={locale} path="/api/v1/spreads" description={copy.endpointDescriptions[4]}
                 params={[["locale", "en | zh-CN"]]}
                 request={example.spreads.request} response={example.spreads.response} />
+              <Endpoint locale={locale} path="/api/v1/spreads/{spreadId}/draw" description={copy.endpointDescriptions[6]}
+                params={[["spreadId", "SINGLE | THREE | COURT | … | YEARLY"], ["locale", "en | zh-CN"]]}
+                request={example.spreadDraw.request} response={example.spreadDraw.response} />
               <Endpoint locale={locale} path="/images/{style}/{id}.webp" description={copy.endpointDescriptions[5]}
                 params={[["style", "cards | cards_dreamy | cards_rws_original"], ["id", "maj00 … pents14"]]}
                 request={example.image.request} response={example.image.response} responseLabel="image/webp">

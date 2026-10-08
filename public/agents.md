@@ -12,13 +12,13 @@ This page is written for AI agents and the developers who connect them to Frankl
 
 Franklin knows the cards and the spreads, and nothing else. It serves the 78-card catalog with bilingual meanings, and the spread definitions: positions, localized labels, interpretation guidance, and a card pool for each position.
 
-The calling application owns everything about a reading: the user's question and consent, drawing cards for a spread, deciding upright or reversed, the flow, and any state. Franklin can hand out random distinct cards, but it does not lay out, store, or interpret readings.
+Franklin also draws: given a spread, it returns one random card per position from that position's pool, never repeating a card. The calling application owns the rest of a reading: the user's question and consent, deciding upright or reversed, the flow, and any state. Franklin does not store or interpret readings.
 
 Use tarot as symbolic material for reflection. Do not state card meanings as facts, probabilities, or certain predictions. The card dataset is project-curated; per-field source attribution has not been independently verified.
 
 ## Card pools
 
-Each spread lists one pool per position in `cardPools`. A drawn card must belong to its position's pool, and a reading never repeats a card.
+Each spread lists one pool per position in `cardPools`. `GET /api/v1/spreads/{spreadId}/draw` takes each position's card from its pool and never repeats a card.
 
 | Pool | Cards |
 | --- | --- |
@@ -39,6 +39,7 @@ Every card carries `arcana`, `suit` (null for major arcana) and `rank`, so pools
 | `GET /api/v1/cards/random?n=3&locale=en` | `n` distinct random cards (1–78, default 1), without orientation |
 | `GET /api/v1/cards/{id}?locale=en` | Retrieve one stable card ID, such as `maj00` |
 | `GET /api/v1/spreads?locale=en` | Retrieve spread IDs, card counts, layout positions, localized labels, card pools, and interpretation guidance |
+| `GET /api/v1/spreads/{spreadId}/draw?locale=en` | One random card per position, from each position's pool, without orientation |
 
 Card search accepts `q` up to 120 characters. Any method other than `GET` returns `405`.
 
@@ -50,10 +51,11 @@ Connect to `https://tarot-api.songhai.site/mcp/agent` using Streamable HTTP. The
 - `get_tarot_card`: retrieve one card by stable `cardId`, such as `maj00`.
 - `get_random_tarot_cards`: `n` distinct random cards, without orientation. Not idempotent.
 - `list_tarot_spreads`: list the spreads with their positions and card pools.
+- `draw_tarot_spread`: draw one card per position of a spread, without orientation. Not idempotent.
 
 ## Errors
 
-Errors use a JSON envelope such as `{ "error": { "code": "VALIDATION_ERROR", "message": "...", "details": [] } }`. A `400` means malformed input; correct the request rather than retrying it unchanged. A `404` means an unknown route or card ID. A `405` means a method other than `GET`.
+Errors use a JSON envelope such as `{ "error": { "code": "VALIDATION_ERROR", "message": "...", "details": [] } }`. A `400` means malformed input; correct the request rather than retrying it unchanged. A `404` means an unknown route, card ID or spread ID. A `405` means a method other than `GET`.
 
 ---
 
@@ -71,13 +73,13 @@ Errors use a JSON envelope such as `{ "error": { "code": "VALIDATION_ERROR", "me
 
 Franklin 只知道牌和牌阵：提供 78 张牌的中英文牌义，以及牌阵定义，包括位置、本地化标签、解读指引和每个位置的牌池。
 
-牌局的一切由调用方应用负责：用户的问题与抽牌意愿、按牌阵抽牌、正逆位、流程和状态。Franklin 可以随机给出不重复的牌，但不排牌阵、不保存牌局，也不做解读。
+Franklin 也负责抽牌：给定牌阵，按每个位置的牌池随机抽一张，同一局不重复。牌局的其余部分由调用方应用负责：用户的问题与抽牌意愿、正逆位、流程和状态。Franklin 不保存牌局，也不做解读。
 
 塔罗用于象征性反思。不要把牌义说成事实、概率或确定的预言。牌库由项目整理，尚未逐字段独立核实来源归属。
 
 ## 牌池
 
-每个牌阵的 `cardPools` 为每个位置给出一个牌池。抽到的牌必须属于该位置的牌池，同一局不重复抽同一张牌。
+每个牌阵的 `cardPools` 为每个位置给出一个牌池。`GET /api/v1/spreads/{spreadId}/draw` 从每个位置的牌池里抽牌，同一局不重复。
 
 | 牌池 | 包含的牌 |
 | --- | --- |
@@ -98,6 +100,7 @@ Franklin 只知道牌和牌阵：提供 78 张牌的中英文牌义，以及牌�
 | `GET /api/v1/cards/random?n=3&locale=zh-CN` | 随机返回 `n` 张不重复的牌（1–78，默认 1），不含正逆位 |
 | `GET /api/v1/cards/{id}?locale=zh-CN` | 查询稳定 ID 的牌，例如 `maj00` |
 | `GET /api/v1/spreads?locale=zh-CN` | 获取牌阵 ID、张数、位置布局、本地化标签、牌池和解读指引 |
+| `GET /api/v1/spreads/{spreadId}/draw?locale=zh-CN` | 按牌池为每个位置随机抽一张牌，不含正逆位 |
 
 卡牌搜索的 `q` 最长 120 字符。`GET` 以外的请求返回 `405`。
 
@@ -109,7 +112,8 @@ Franklin 只知道牌和牌阵：提供 78 张牌的中英文牌义，以及牌�
 - `get_tarot_card`：按稳定的 `cardId` 查询单张牌，例如 `maj00`。
 - `get_random_tarot_cards`：随机返回 `n` 张不重复的牌，不含正逆位；结果每次不同。
 - `list_tarot_spreads`：列出牌阵及其位置和牌池。
+- `draw_tarot_spread`：为牌阵的每个位置抽一张牌，不含正逆位；结果每次不同。
 
 ## 错误
 
-错误采用如下 JSON 结构：`{ "error": { "code": "VALIDATION_ERROR", "message": "...", "details": [] } }`。`400` 表示输入格式错误，应修正请求，不要原样重复。`404` 表示端点或卡牌 ID 不存在。`405` 表示使用了 `GET` 以外的方法。
+错误采用如下 JSON 结构：`{ "error": { "code": "VALIDATION_ERROR", "message": "...", "details": [] } }`。`400` 表示输入格式错误，应修正请求，不要原样重复。`404` 表示端点、卡牌 ID 或牌阵 ID 不存在。`405` 表示使用了 `GET` 以外的方法。

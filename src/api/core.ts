@@ -122,3 +122,34 @@ export function listSpreads(locale: ApiLocale) {
     };
   });
 }
+
+type Card = NonNullable<ReturnType<typeof getCard>>;
+
+/** Pool membership from a card's suit and rank, the rule each spread's cardPools uses. */
+export function isInPool(card: Card, pool: string) {
+  switch (pool) {
+    case "MAJOR": return card.suit === null;
+    case "MINOR_PIP": return card.suit !== null && card.rank <= 10;
+    case "COURT": return card.suit !== null && card.rank >= 11;
+    case "SUIT_WANDS": return card.suit === "WANDS";
+    case "SUIT_CUPS": return card.suit === "CUPS";
+    case "SUIT_SWORDS": return card.suit === "SWORDS";
+    case "SUIT_PENTACLES": return card.suit === "PENTACLES";
+    default: return true;
+  }
+}
+
+/** One random card per position from that position's pool, never repeating a card. Orientation belongs to the caller. */
+export function drawSpread(spreadId: string, locale: ApiLocale, origin: string, random: (max: number) => number = randomInt) {
+  const spread = listSpreads(locale).find((item) => item.id === spreadId);
+  if (!spread) return undefined;
+  const deck = CARD_IDS.map((id) => getCard(id, locale, origin)!);
+  const used = new Set<string>();
+  const cards = spread.cardPools.map((cardPool: string, index: number) => {
+    const options = deck.filter((card) => !used.has(card.id) && isInPool(card, cardPool));
+    const card = options[random(options.length)];
+    used.add(card.id);
+    return { positionIndex: index + 1, positionLabel: spread.labels[index] ?? `${index + 1}`, cardPool, card };
+  });
+  return { spread: { id: spread.id, name: spread.name, cardCount: spread.cardCount }, cards, locale };
+}

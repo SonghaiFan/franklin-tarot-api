@@ -1,8 +1,8 @@
 # Franklin Tarot API
 
-Read-only tarot data for applications and AI agents: 78 bilingual cards (English and Simplified Chinese) and 11 spread definitions, with positions and card pools. REST and the UI-free Agent MCP share one service implementation. Your app draws the cards and owns the reading; the service has no database and no model API dependency.
+Read-only tarot data and draws for applications and AI agents: 78 bilingual cards (English and Simplified Chinese), 11 spread definitions with positions and card pools, and random spread draws. REST and the UI-free Agent MCP share one service implementation. Your app decides orientation and owns the reading; the service has no database and no model API dependency.
 
-只读塔罗数据服务：提供 78 张中英文牌和 11 种牌阵定义（含位置与牌池）。抽牌、正逆位、流程和状态由调用方应用负责。
+只读塔罗服务：提供 78 张中英文牌、11 种牌阵定义（含位置与牌池），并按牌阵随机抽牌。正逆位、流程和状态由调用方应用负责。
 
 - **Base URL:** `https://tarot-api.songhai.site`
 - **Auth:** none, no key required
@@ -12,7 +12,7 @@ Read-only tarot data for applications and AI agents: 78 bilingual cards (English
 
 ## Quick start
 
-Load the deck and the spreads once. Everything a reading needs comes from these two calls.
+Load the deck and the spreads once.
 
 ```js
 const API = "https://tarot-api.songhai.site";
@@ -26,37 +26,15 @@ cards.length;   // 78
 spreads.length; // 11
 ```
 
-Then draw in your own app. Each spread lists one card pool per position; take one card from each pool, never repeat a card, and choose upright or reversed yourself:
+Then draw a spread. Franklin picks one card per position from that position's pool, never repeating a card; your app decides upright or reversed:
 
 ```js
-const inPool = (card, pool) => ({
-  FULL: true,
-  MAJOR: card.suit === null,
-  MINOR_PIP: card.suit !== null && card.rank <= 10,
-  COURT: card.suit !== null && card.rank >= 11,
-  SUIT_WANDS: card.suit === "WANDS",
-  SUIT_CUPS: card.suit === "CUPS",
-  SUIT_SWORDS: card.suit === "SWORDS",
-  SUIT_PENTACLES: card.suit === "PENTACLES",
-})[pool];
+const draw = await fetch(`${API}/api/v1/spreads/COURT/draw?locale=en`).then((response) => response.json());
 
-function draw(spread, deck, reversedProbability = 0.4) {
-  const used = new Set();
-  return spread.cardPools.map((pool, index) => {
-    const options = deck.filter((card) => !used.has(card.id) && inPool(card, pool));
-    const card = options[Math.floor(Math.random() * options.length)];
-    used.add(card.id);
-    const reversed = Math.random() < reversedProbability;
-    return {
-      position: spread.labels[index],
-      card: card.name,
-      reversed,
-      meaning: reversed ? card.meanings.reversed.en : card.meanings.upright.en,
-    };
-  });
-}
-
-draw(spreads.find((spread) => spread.id === "COURT"), cards);
+const reading = draw.cards.map(({ positionLabel, card }) => {
+  const reversed = Math.random() < 0.4; // your app's setting
+  return { position: positionLabel, card: card.name, reversed, meaning: card.meanings[reversed ? "reversed" : "upright"].en };
+});
 // For example:
 // [
 //   { position: "Situation (Pip)", card: "Five of Swords", reversed: false, meaning: "…" },
@@ -73,6 +51,7 @@ draw(spreads.find((spread) => spread.id === "COURT"), cards);
 | [`GET /api/v1/cards`](#list-or-search-cards) | Every card, or those matching `q`, `arcana`, `suit` |
 | [`GET /api/v1/cards/random`](#random-cards) | `n` distinct random cards, without orientation |
 | [`GET /api/v1/spreads`](#spreads) | The 11 spreads with positions, labels and card pools |
+| [`GET /api/v1/spreads/{spreadId}/draw`](#draw-a-spread) | One random card per position, from each pool, without orientation |
 | `GET /health` | `{ "status": "ok", "service": "franklin-tarot-api", "apiVersion": "1" }` |
 | `GET /openapi.json` | OpenAPI 3.1 schema |
 
@@ -217,6 +196,27 @@ The 11 spreads and their pools:
 | `RELATION` | 11 | `FULL` × 11 |
 | `YEARLY` | 15 | `FULL` × 15 |
 
+### Draw a spread
+
+One random card per position, taken from that position's card pool, never repeating a card. Cards carry no orientation: your app decides upright or reversed. Responses are not cached; an unknown spread ID returns `404 SPREAD_NOT_FOUND`.
+
+```sh
+curl "https://tarot-api.songhai.site/api/v1/spreads/COURT/draw?locale=en"
+```
+
+```jsonc
+// For example:
+{
+  "spread": { "id": "COURT", "name": "Court Card Behavior", "cardCount": 3 },
+  "cards": [
+    { "positionIndex": 1, "positionLabel": "Situation (Pip)", "cardPool": "MINOR_PIP", "card": { "id": "swords05", "name": "Five of Swords", … } },
+    { "positionIndex": 2, "positionLabel": "Persona (Court)", "cardPool": "COURT",     "card": { "id": "cups13", "name": "Queen of Cups", … } },
+    { "positionIndex": 3, "positionLabel": "Cause (Major)",   "cardPool": "MAJOR",     "card": { "id": "maj16", "name": "The Tower", … } }
+  ],
+  "locale": "en"
+}
+```
+
 ### Card pools
 
 | Pool | Cards |
@@ -257,6 +257,7 @@ curl "https://tarot-api.songhai.site/api/v1/cards/random?n=0"
 | --- | --- | --- |
 | `400` | `VALIDATION_ERROR` | A parameter is out of range, such as `n=0` or `locale=fr` |
 | `404` | `CARD_NOT_FOUND` | No card has that ID, for example `/api/v1/cards/nope` |
+| `404` | `SPREAD_NOT_FOUND` | No spread has that ID, for example `/api/v1/spreads/NOPE/draw` |
 | `404` | `NOT_FOUND` | No route matches |
 | `405` | `METHOD_NOT_ALLOWED` | Any method other than `GET` |
 
@@ -270,6 +271,7 @@ curl "https://tarot-api.songhai.site/api/v1/cards/random?n=0"
 | `get_tarot_card` | `cardId`, `locale` | `{ card }` |
 | `get_random_tarot_cards` | `n` (1–78, default 1), `locale` | `{ cards, locale }`, without orientation |
 | `list_tarot_spreads` | `locale` | `{ spreads, locale }` |
+| `draw_tarot_spread` | `spreadId`, `locale` | `{ spread, cards, locale }`, one card per position, without orientation |
 
 Connect it to an MCP client:
 
@@ -316,7 +318,7 @@ node scripts/api-smoke.mjs http://127.0.0.1:3001
 
 One build serves documentation, REST, MCP, OpenAPI and card artwork. Vercel deploys the repository using its single `vercel.json`; GitHub Actions runs checks. See [deployment instructions](docs/api-deployment.md). `npm run dev` previews the documentation site while editing.
 
-The independent [Frankie Tarot app](https://github.com/SonghaiFan/frankie-tarot) is the reference consumer, live at [tarot.songhai.site](https://tarot.songhai.site). It loads cards and spreads over REST and draws locally. There are no sibling source imports or local path dependencies.
+The independent [Frankie Tarot app](https://github.com/SonghaiFan/frankie-tarot) is the reference consumer, live at [tarot.songhai.site](https://tarot.songhai.site). It loads cards and spreads and draws spreads over REST, then decides orientation itself. There are no sibling source imports or local path dependencies.
 
 Only the v1 API and stable card IDs are supported.
 

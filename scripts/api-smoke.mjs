@@ -59,6 +59,7 @@ console.log("PASS health, OpenAPI, 78 cards, 11 spreads, card detail");
 
 assert.equal((await json("/api/v1/cards/random?n=0", {}, 400)).error.code, "VALIDATION_ERROR");
 assert.equal((await json("/api/v1/cards/random?n=3&locale=en")).cards.length, 3);
+assert.equal((await json("/api/v1/spreads/COURT/draw?locale=en")).cards.length, 3);
 assert.equal((await json("/api/v1/cards", post({}), 405)).error.code, "METHOD_NOT_ALLOWED");
 console.log("PASS input errors and read-only routes");
 
@@ -70,13 +71,14 @@ async function rpc(method, params) {
   return message.result;
 }
 await rpc("initialize", { protocolVersion: "2025-03-26", capabilities: {}, clientInfo: { name: "tarot-deployment-smoke", version: "1.0.0" } });
-assert.equal((await rpc("tools/list", {})).tools.length, 4);
+assert.equal((await rpc("tools/list", {})).tools.length, 5);
 const tool = async (name, args) => (await rpc("tools/call", { name, arguments: args })).structuredContent;
 assert.equal((await tool("list_tarot_spreads", { locale: "en" })).spreads.length, 11);
 assert.equal((await tool("search_tarot_cards", { locale: "en" })).cards.length, 78);
 assert.equal((await tool("get_random_tarot_cards", { n: 3, locale: "en" })).cards.length, 3);
+assert.equal((await tool("draw_tarot_spread", { spreadId: "CELTIC", locale: "en" })).cards.length, 10);
 assert.equal((await tool("get_tarot_card", { cardId: "maj00", locale: "en" })).card.id, "maj00");
-console.log("PASS MCP initialization, all four tools");
+console.log("PASS MCP initialization, all five tools");
 
 for (const url of Object.values(cards.cards[0].imageUrls)) {
   const assetUrl = new URL(url);

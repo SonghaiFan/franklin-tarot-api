@@ -23,34 +23,17 @@ const [{ cards }, { spreads }] = await Promise.all([
 cards.length;   // 78
 spreads.length; // 11`,
 
-    draw: `const inPool = (card, pool) => ({
-  FULL: true,
-  MAJOR: card.suit === null,
-  MINOR_PIP: card.suit !== null && card.rank <= 10,
-  COURT: card.suit !== null && card.rank >= 11,
-  SUIT_WANDS: card.suit === "WANDS",
-  SUIT_CUPS: card.suit === "CUPS",
-  SUIT_SWORDS: card.suit === "SWORDS",
-  SUIT_PENTACLES: card.suit === "PENTACLES",
-})[pool];
+    draw: `const draw = await fetch(\`\${API}/api/v1/spreads/COURT/draw?locale=${locale}\`).then((response) => response.json());
 
-function draw(spread, deck, reversedProbability = 0.4) {
-  const used = new Set();
-  return spread.cardPools.map((pool, index) => {
-    const options = deck.filter((card) => !used.has(card.id) && inPool(card, pool));
-    const card = options[Math.floor(Math.random() * options.length)];
-    used.add(card.id);
-    const reversed = Math.random() < reversedProbability;
-    return {
-      position: spread.labels[index],
-      card: card.name,
-      reversed,
-      meaning: card.meanings[reversed ? "reversed" : "upright"]["${locale}"],
-    };
-  });
-}
-
-draw(spreads.find((spread) => spread.id === "COURT"), cards);`,
+const reading = draw.cards.map(({ positionLabel, card }) => {
+  const reversed = Math.random() < 0.4; // your app's setting
+  return {
+    position: positionLabel,
+    card: card.name,
+    reversed,
+    meaning: card.meanings[reversed ? "reversed" : "upright"]["${locale}"],
+  };
+});`,
 
     drawResult: pick(`[
   { "position": "Situation (Pip)", "card": "Five of Swords", "reversed": false, "meaning": "…" },
@@ -153,6 +136,19 @@ curl "${API_BASE}/api/v1/cards?arcana=MAJOR&locale=en"  # 22 cards`,
       "defaultQuestions": { "en": ["What do I become when I am under pressure?", …], "zh-CN": ["我在面对压力时会变成什么样?", …] }
     },
     …
+  ],
+  "locale": "${locale}"
+}`,
+    },
+
+    spreadDraw: {
+      request: `curl "${API_BASE}/api/v1/spreads/COURT/draw?locale=${locale}"`,
+      response: `{
+  "spread": { "id": "COURT", "name": "${pick("Court Card Behavior", "宫廷行为模式")}", "cardCount": 3 },
+  "cards": [
+    { "positionIndex": 1, "positionLabel": "${pick("Situation (Pip)", "情境(小阿卡纳)")}", "cardPool": "MINOR_PIP", "card": { "id": "swords05", "name": "${pick("Five of Swords", "宝剑五")}", … } },
+    { "positionIndex": 2, "positionLabel": "${pick("Persona (Court)", "角色(宫廷牌)")}", "cardPool": "COURT", "card": { "id": "cups13", "name": "${pick("Queen of Cups", "圣杯王后")}", … } },
+    { "positionIndex": 3, "positionLabel": "${pick("Cause (Major)", "根因(大阿卡纳)")}", "cardPool": "MAJOR", "card": { "id": "maj16", "name": "${pick("The Tower", "高塔")}", … } }
   ],
   "locale": "${locale}"
 }`,
