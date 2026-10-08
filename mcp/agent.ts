@@ -1,15 +1,13 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { getCard, listCards, listCardsQuerySchema, listSpreads, SPREAD_IDS } from "../src/api/core";
-import { handleTarotApi } from "../src/api/http";
+import { getCard, listCards, listCardsQuerySchema, listSpreads } from "../src/api/core";
 
 const localeSchema = z.enum(["en", "zh-CN"]).default("zh-CN");
 const cardsOutput = z.object({ cards: z.array(z.any()), total: z.number(), limit: z.number(), offset: z.number(), locale: z.enum(["en", "zh-CN"]), datasetVersion: z.string() });
 const spreadOutput = z.object({ spreads: z.array(z.any()), locale: z.enum(["en", "zh-CN"]) });
-const readingOutput = z.object({ reading: z.any(), context: z.any(), policy: z.string() });
-export function createAgentMcpServer(apiOrigin = process.env.PUBLIC_API_BASE_URL || "http://127.0.0.1:3001", fetcher: typeof fetch = (input, init) => handleTarotApi(new Request(input, init))) {
+export function createAgentMcpServer(apiOrigin = process.env.PUBLIC_API_BASE_URL || "http://127.0.0.1:3001") {
   const server = new McpServer({ name: "franklin-tarot-agent", version: "1.0.0" }, {
-    instructions: "Tools provide tarot card references, spread metadata, and seeded reading draws for symbolic reflection. Choose a real spread from list_tarot_spreads before drawing. draw_tarot_reading makes a new draw and returns the full context; answer follow-ups from that context, never redraw to answer a follow-up. Use a caller-generated seed when retries must reproduce the same draw. Do not present tarot as factual prediction, certainty, or probability. Card meanings are project-curated and field-level source attribution is not independently verified.",
+    instructions: "Tools provide tarot card references and spread definitions (positions, labels and per-position card pools) for symbolic reflection. Franklin does not draw cards; the calling application owns the draw. Do not present tarot as factual prediction, certainty, or probability. Card meanings are project-curated and field-level source attribution is not independently verified.",
   });
 
   server.registerTool("search_tarot_cards", {
@@ -44,19 +42,6 @@ export function createAgentMcpServer(apiOrigin = process.env.PUBLIC_API_BASE_URL
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
   }, async ({ locale }) => {
     const payload = { spreads: listSpreads(locale), locale };
-    return { structuredContent: payload, content: [{ type: "text", text: JSON.stringify(payload) }] };
-  });
-
-  server.registerTool("draw_tarot_reading", {
-    title: "Draw a tarot reading",
-    description: "Draw a new reading for a user-requested symbolic reflection. Select a real spread ID from list_tarot_spreads first. Provide and retain a seed if the same draw must be reproduced after a retry. Returns a complete snapshot and orientation-aware structured context.",
-    inputSchema: { question: z.string().trim().max(2000).default(""), spread: z.enum(SPREAD_IDS as [string, ...string[]]), locale: localeSchema, seed: z.string().min(1).max(128).optional(), reversedProbability: z.number().min(0).max(1).default(0.4) },
-    outputSchema: readingOutput,
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: false },
-  }, async (args) => {
-    const response = await fetcher(`${apiOrigin}/api/v1/readings/draw`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(args) });
-    const payload = await response.json();
-    if (!response.ok) return { isError: true, content: [{ type: "text", text: JSON.stringify(payload) }] };
     return { structuredContent: payload, content: [{ type: "text", text: JSON.stringify(payload) }] };
   });
 

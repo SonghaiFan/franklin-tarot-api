@@ -58,12 +58,9 @@ assert.equal((await json("/api/v1/spreads?locale=en")).spreads.length, 11);
 assert.equal((await json("/api/v1/cards/maj00?locale=en")).id, "maj00");
 console.log("PASS health, OpenAPI, 78 cards, 11 spreads, card detail");
 
-const args = { spread: "THREE", seed: "deployment-smoke-v1", locale: "en" };
-const draw = await json("/api/v1/readings/draw", post(args));
-assert.deepEqual(await json("/api/v1/readings/draw", post(args)), draw);
-assert.equal(new Set(draw.reading.cards.map((card) => card.cardId)).size, 3);
-assert.equal((await json("/api/v1/readings/draw", post({ spread: "AUTO" }), 400)).error.code, "VALIDATION_ERROR");
-console.log("PASS deterministic draw and input errors");
+assert.equal((await json("/api/v1/cards?limit=0", {}, 400)).error.code, "VALIDATION_ERROR");
+assert.equal((await json("/api/v1/cards", post({}), 405)).error.code, "METHOD_NOT_ALLOWED");
+console.log("PASS input errors and read-only routes");
 
 let id = 0;
 async function rpc(method, params) {
@@ -73,13 +70,12 @@ async function rpc(method, params) {
   return message.result;
 }
 await rpc("initialize", { protocolVersion: "2025-03-26", capabilities: {}, clientInfo: { name: "tarot-deployment-smoke", version: "1.0.0" } });
-assert.equal((await rpc("tools/list", {})).tools.length, 4);
+assert.equal((await rpc("tools/list", {})).tools.length, 3);
 const tool = async (name, args) => (await rpc("tools/call", { name, arguments: args })).structuredContent;
-assert.deepEqual(await tool("draw_tarot_reading", args), draw);
 assert.equal((await tool("list_tarot_spreads", { locale: "en" })).spreads.length, 11);
 assert.equal((await tool("search_tarot_cards", { locale: "en", limit: 1 })).total, 78);
 assert.equal((await tool("get_tarot_card", { cardId: "maj00", locale: "en" })).card.id, "maj00");
-console.log("PASS MCP initialization, all four tools, REST/MCP draw parity");
+console.log("PASS MCP initialization, all three tools");
 
 for (const url of Object.values(cards.cards[0].imageUrls)) {
   const assetUrl = new URL(url);
@@ -91,8 +87,8 @@ for (const url of Object.values(cards.cards[0].imageUrls)) {
   assert.equal(bytes.subarray(0, 4).toString(), "RIFF");
   assert.equal(bytes.subarray(8, 12).toString(), "WEBP");
 }
-for (const path of ["/api/v1/readings/draw", "/mcp/agent"]) {
-  const response = await request(path, { method: "OPTIONS", headers: { Origin: "https://example.com", "Access-Control-Request-Method": "POST" } });
+for (const [path, method] of [["/api/v1/cards", "GET"], ["/mcp/agent", "POST"]]) {
+  const response = await request(path, { method: "OPTIONS", headers: { Origin: "https://example.com", "Access-Control-Request-Method": method } });
   assert.equal(response.status, 204);
   assert.equal(response.headers.get("access-control-allow-origin"), "*");
 }

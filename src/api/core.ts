@@ -1,4 +1,4 @@
-import { createHash, randomBytes } from "node:crypto";
+import { createHash } from "node:crypto";
 import { z } from "zod";
 import groundTruth from "../data/tarot.json";
 
@@ -8,7 +8,6 @@ export type ApiLocale = z.infer<typeof localeSchema>;
 
 const data = groundTruth as any;
 export const API_VERSION = "1";
-export const DRAW_ALGORITHM_VERSION = "sha256-counter-v1";
 export const DATASET_VERSION = createHash("sha256").update(JSON.stringify(groundTruth)).digest("hex").slice(0, 16);
 export const CARD_IDS = data.cards.allIds.map((key: string) => data.cards.byId[key].image.replace(/\.[^.]+$/, "")) as string[];
 export const SPREAD_IDS = data.spreads.allIds.filter((id: string) => id !== "AUTO") as string[];
@@ -107,80 +106,3 @@ export function listSpreads(locale: ApiLocale) {
     };
   });
 }
-
-const drawRequestSchema = z.object({
-  question: z.string().trim().max(2000).default(""),
-  spread: z.string().refine((value) => SPREAD_IDS.includes(value), "Choose a supported spread ID."),
-  locale: localeSchema.default("zh-CN"),
-  seed: z.string().min(1).max(128).optional(),
-  reversedProbability: z.number().min(0).max(1).default(0.4),
-}).strict();
-export type DrawRequest = z.input<typeof drawRequestSchema>;
-
-function makeRng(seed: string) {
-  let counter = 0;
-  const uint32 = () => createHash("sha256").update(`${DRAW_ALGORITHM_VERSION}\0${seed}\0${counter++}`).digest().readUInt32BE(0);
-  return (max: number) => {
-    const range = 0x100000000;
-    const ceiling = Math.floor(range / max) * max;
-    let value = uint32();
-    while (value >= ceiling) value = uint32();
-    return value % max;
-  };
-}
-
-export function allowedPool(pool: string): string[] {
-  return CARD_IDS.filter((id) => {
-    const suit = suitFor(id);
-    const numericId = cardsByStableId.get(id)!.numericId;
-    const isMajor = numericId < 22;
-    const rank = Number(id.match(/(\d+)$/)?.[1] ?? 0);
-    const isCourt = !isMajor && rank >= 11;
-    if (pool === "MAJOR") return isMajor;
-    if (pool === "MINOR_PIP") return !isMajor && !isCourt;
-    if (pool === "COURT") return isCourt;
-    if (pool === "SUIT_CUPS") return suit === "CUPS";
-    if (pool === "SUIT_PENTACLES") return suit === "PENTACLES";
-    if (pool === "SUIT_SWORDS") return suit === "SWORDS";
-    if (pool === "SUIT_WANDS") return suit === "WANDS";
-    return true;
-  });
-}
-
-export function drawReading(input: DrawRequest, origin: string) {
-  const request = drawRequestSchema.parse(input);
-  const seed = request.seed ?? randomBytes(16).toString("hex");
-  const spread = listSpreads(request.locale).find((item) => item.id === request.spread)!;
-  const rawSpread = data.spreads.byId[spread.id];
-  const pools: string[] = rawSpread.cardPools ?? Array.from({ length: spread.cardCount }, () => "FULL");
-  const pick = makeRng(seed);
-  const used = new Set<string>();
-  const threshold = Math.round(request.reversedProbability * 1_000_000);
-  const cards = pools.map((pool, index) => {
-    const available = allowedPool(pool).filter((id) => !used.has(id));
-    if (!available.length) throw new Error(`The card pool for ${spread.id} position ${index + 1} is exhausted.`);
-    const id = available[pick(available.length)];
-    used.add(id);
-    const orientation = pick(1_000_000) < threshold ? "REVERSED" : "UPRIGHT";
-    const definition = getCard(id, request.locale, origin)!;
-    const labels = spread.labelsByLocale[request.locale] ?? [];
-    const positionLabel = labels[index] || `Position ${index + 1}`;
-    return {
-      positionIndex: index + 1,
-      positionLabel,
-      cardId: id,
-      orientation,
-      card: definition,
-      selectedMeaning: {
-        keywords: definition.keywords[request.locale],
-        meaning: definition.meanings[orientation === "REVERSED" ? "reversed" : "upright"][request.locale],
-      },
-    };
-  });
-  const identity = { datasetVersion: DATASET_VERSION, algorithmVersion: DRAW_ALGORITHM_VERSION, seed, spreadId: spread.id, reversedProbability: request.reversedProbability, cards: cards.map(({ cardId, orientation }) => ({ cardId, orientation })) };
-  const readingId = createHash("sha256").update(JSON.stringify(identity)).digest("hex").slice(0, 24);
-  const snapshot = { readingId, datasetVersion: DATASET_VERSION, algorithmVersion: DRAW_ALGORITHM_VERSION, seed, spreadId: spread.id, drawLocale: request.locale, reversedProbability: request.reversedProbability, cards: cards.map(({ positionIndex, positionLabel, cardId, orientation }) => ({ positionIndex, positionLabel, cardId, orientation })) };
-  return { reading: { ...snapshot, question: request.question, locale: request.locale }, context: { question: request.question, locale: request.locale, spread: { id: spread.id, name: spread.name, description: spread.description, cardCount: spread.cardCount, interpretationInstruction: spread.interpretationInstruction }, cards }, policy: "Tarot is offered for symbolic reflection; the cards do not establish factual outcomes or probabilities." };
-}
-
-export const agentDrawSchema = drawRequestSchema;

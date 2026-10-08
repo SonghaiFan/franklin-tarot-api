@@ -1,53 +1,51 @@
 export type Locale = "en" | "zh-CN";
 type CopySet = {
   nav: string[]; onPage: string; asideNote: string; heroEyebrow: string; heroDescription: string;
-  quickstart: string; reference: string; stats: string[]; firstDraw: string; quickDescription: string;
-  quickFields: string[]; auth: string; spreadChoice: string; state: string; liveTitle: string;
-  liveDescription: string; loading: string; draw: string; replay: string; retry: string;
-  followup: string; inspect: string; copied: string; copy: string; errors: string;
+  quickstart: string; reference: string; stats: string[]; firstRequest: string; quickDescription: string;
+  quickFields: string[]; auth: string; spreadChoice: string; copied: string; copy: string; errors: string;
   endpointDescriptions: string[]; equivalentCurl: string; statelessNote: string; spreadTitle: string;
-  spreadDescription: string; spreadLoadError: string; spreadLoading: string; spreadDataNote: string;
+  spreadDescription: string; spreadLoadError: string; spreadLoading: string; spreadDataNote: string; spreadPoolNote: string;
   agentUse: string; restOrMcp: string; agentDescription: string; agentInstruction: string;
-  tools: string; agentNote: string; predictable: string; responseDescription: string;
-  responseBullets: string[]; openapi: string; footer: string[]; positions: string;
+  tools: string; agentNote: string; poolTitle: string; poolDescription: string;
+  poolMembers: string[]; openapi: string; footer: string[]; positions: string;
   card: string; cards: string;
 };
 
 export const COPY = {
   en: {
-    nav: ["Overview", "Quickstart", "Endpoints", "Spreads", "Response"],
+    nav: ["Overview", "Quickstart", "Endpoints", "Spreads", "Card pools"],
     onPage: "On this page",
-    asideNote: "Stateless REST and MCP primitives. Your app or agent keeps the reading snapshot.",
+    asideNote: "Read-only REST and MCP. Franklin knows the cards and the spreads; your app owns the reading.",
     heroEyebrow: "REST API · MCP · Open source",
-    heroDescription: "A stateless tarot service for apps and AI agents: browse cards, choose from the spread catalog, make replayable draws, and rebuild verified context for follow-ups.",
+    heroDescription: "A read-only tarot service for apps and AI agents: 78 bilingual cards and real spreads, with positions and card pools. Your app draws the cards and owns the reading.",
     quickstart: "Quickstart", reference: "Reference", stats: ["Cards", "Spreads", "Locales"],
-    firstDraw: "Your first draw", quickDescription: "Create a reading, keep its snapshot, and reuse it for follow-ups.",
-    quickFields: ["Base URL", "Auth", "Spreads", "State"],
-    auth: "None. No key required.", spreadChoice: "Choose a spread from", state: "Save the seed before sending and keep the returned reading snapshot in your app.",
-    liveTitle: "Try the real API", liveDescription: "This browser calls Franklin directly. Replay keeps the same seed; follow-up uses the returned snapshot.",
-    loading: "Loading…", draw: "Draw three cards", replay: "Replay same seed", retry: "Retry same request", followup: "Follow up without redrawing", inspect: "Inspect JSON response", copied: "Copied", copy: "Copy",
-    errors: "Six primitives", endpointDescriptions: ["Lightweight service health check.", "Search the card catalog by name, keyword, description, meaning, arcana, or suit. Supports locale and pagination.", "Get bilingual card descriptions, upright and reversed meanings, provenance notes, and versioned image URLs.", "List available spreads with relative positions, localized labels, position card pools, and interpretation guidance.", "Create a seeded reading. Choose a spread and keep the seed to make retries deterministic.", "Validate a caller-held snapshot and rebuild context for a follow-up. This never redraws or stores the reading."],
-    equivalentCurl: "Equivalent cURL request", statelessNote: "The service does not store questions or readings. Apps and agents interpret the returned context; tarot is for reflection, not factual prediction.",
-    spreadTitle: "See the spreads", spreadDescription: "Each diagram uses the same relative card positions as the Frankie app. Numbers show draw order; labels name each position.", spreadLoadError: "Spread layouts could not be loaded. Try refreshing.", spreadLoading: "Loading spread layouts…", spreadDataNote: "Positions and localized labels come from", agentUse: "Agent use", restOrMcp: "REST or MCP", agentDescription: "Try the Frankie Tarot app, or build your own interface. Franklin also exposes a UI-free Agent MCP at", agentInstruction: "Ask the agent to list spreads before drawing. Keep the returned reading snapshot and use the context tool for follow-ups.", tools: "Tools", agentNote: "Web and plugin interfaces are separate example applications. The browser uses REST; an agent can use MCP for spread discovery and follow-up context.",
-    predictable: "Predictable by design", responseDescription: "A draw returns a replayable snapshot and structured context. Your app or agent chooses how to interpret it and retains the snapshot it needs.", responseBullets: ["The seed and version fields support deterministic replay.", "Selected meanings follow each card's orientation.", "Structured errors include stable codes; questions and readings are not stored."], openapi: "OpenAPI schema", footer: ["For reflection, not prediction", "Source"],
+    firstRequest: "Your first request", quickDescription: "Load the deck and the spreads. Everything a reading needs comes from these two calls.",
+    quickFields: ["Base URL", "Auth", "Spreads"],
+    auth: "None. No key required.", spreadChoice: "Choose a spread from",
+    copied: "Copied", copy: "Copy",
+    errors: "Four primitives", endpointDescriptions: ["Lightweight service health check.", "Search the card catalog by name, keyword, description, meaning, arcana, or suit. Supports locale and pagination.", "Get bilingual card descriptions, upright and reversed meanings, provenance notes, and versioned image URLs.", "List available spreads with relative positions, localized labels, position card pools, and interpretation guidance."],
+    equivalentCurl: "Equivalent cURL request", statelessNote: "Franklin does not draw, store or interpret readings. Your app draws the cards, decides orientation and keeps the reading; tarot is for reflection, not factual prediction.",
+    spreadTitle: "See the spreads", spreadDescription: "Each diagram uses the same relative card positions as the Frankie app. Numbers show draw order; labels name each position.", spreadLoadError: "Spread layouts could not be loaded. Try refreshing.", spreadLoading: "Loading spread layouts…", spreadDataNote: "Positions and localized labels come from", spreadPoolNote: "each position's card pool says which cards may be drawn there.", agentUse: "Agent use", restOrMcp: "REST or MCP", agentDescription: "Try the Frankie Tarot app, or build your own interface. Franklin also exposes a UI-free Agent MCP at", agentInstruction: "Agents can look up cards and spreads; the calling app owns the draw.", tools: "Tools", agentNote: "Web and plugin interfaces are separate example applications. The browser uses REST; an agent can use MCP for cards and spreads.",
+    poolTitle: "Card pools", poolDescription: "Each spread lists one pool per position in cardPools. A drawn card must come from its position's pool, and a reading never repeats a card.",
+    poolMembers: ["All 78 cards", "Major arcana, maj00–maj21", "Minor arcana ranks 1–10", "Minor arcana ranks 11–14: Page, Knight, Queen, King", "All 14 cards of that suit"], openapi: "OpenAPI schema", footer: ["For reflection, not prediction", "Source"],
     positions: "positions in draw order", card: "card", cards: "cards",
   },
   "zh-CN": {
-    nav: ["概览", "快速开始", "端点", "牌阵", "响应"],
+    nav: ["概览", "快速开始", "端点", "牌阵", "牌池"],
     onPage: "本页导航",
-    asideNote: "无状态 REST 与 MCP 接口。牌局快照由你的应用或 Agent 保存。",
+    asideNote: "只读的 REST 与 MCP。Franklin 只知道牌和牌阵，牌局由你的应用负责。",
     heroEyebrow: "REST API · MCP · 开源",
-    heroDescription: "为应用和 AI Agent 提供的无状态塔罗服务：浏览卡牌、读取牌阵目录、执行可重放抽牌，并为后续追问重建经过校验的上下文。",
+    heroDescription: "为应用和 AI Agent 提供的只读塔罗服务：78 张中英文牌和真实牌阵，含位置与牌池。抽牌和牌局由你的应用负责。",
     quickstart: "快速开始", reference: "接口参考", stats: ["张牌", "种牌阵", "种语言"],
-    firstDraw: "完成第一次抽牌", quickDescription: "创建牌局、保存快照，并在后续追问中继续使用。",
-    quickFields: ["服务地址", "身份验证", "牌阵", "状态保存"],
-    auth: "无需密钥。", spreadChoice: "从这里选择牌阵：", state: "发送前先保存 seed，并在自己的应用中保存返回的牌局快照。",
-    liveTitle: "在线体验真实 API", liveDescription: "浏览器直接请求 Franklin 服务。重试会复用同一个 seed；后续追问会使用返回的快照。",
-    loading: "请求中…", draw: "抽取三张牌", replay: "用相同 seed 重放", retry: "重试同一请求", followup: "沿用牌局继续追问", inspect: "查看 JSON 响应", copied: "已复制", copy: "复制",
-    errors: "六个基础端点", endpointDescriptions: ["轻量级服务健康检查。", "按名称、关键词、描述、牌义、大阿卡那或花色搜索牌库，支持语言和分页。", "获取中英文牌面描述、正逆位牌义、来源说明及带版本的图片地址。", "列出可用牌阵、相对位置、对应语言的标签、位置牌池和解读指引。", "创建带 seed 的牌局。选择牌阵并保存 seed，即可确保重试抽到相同结果。", "校验调用方保存的快照，并为后续追问重建上下文；不会重新抽牌或保存牌局。"],
-    equivalentCurl: "对应的 cURL 请求", statelessNote: "服务不会保存问题或牌局。应用和 Agent 自行解读返回的上下文；塔罗用于反思，不用于确定性预测。",
-    spreadTitle: "查看牌阵", spreadDescription: "牌阵图使用与 Frankie 应用相同的相对位置。数字表示抽牌顺序，下方列出每个位置的含义。", spreadLoadError: "无法加载牌阵布局，请刷新后重试。", spreadLoading: "正在加载牌阵…", spreadDataNote: "相对位置和本地化标签来自", agentUse: "Agent 接入", restOrMcp: "REST 或 MCP", agentDescription: "可以体验 Frankie Tarot 应用，也可以自行构建界面。Franklin 还提供不含 UI 的 Agent MCP 接口：", agentInstruction: "抽牌前先查询牌阵。保存返回的牌局快照，并在后续追问时调用上下文工具。", tools: "工具", agentNote: "网页和插件是独立的示例应用。浏览器使用 REST；Agent 可使用 MCP 查询牌阵并重建追问上下文。",
-    predictable: "响应可验证、可重放", responseDescription: "抽牌会返回可重放的牌局快照和结构化上下文。如何解读由你的应用或 Agent 决定，所需快照也由调用方保存。", responseBullets: ["seed、数据集版本和算法版本用于确定性重放。", "选中的牌义会对应卡牌的正位或逆位。", "结构化错误包含稳定错误码；问题与牌局不会被保存。"], openapi: "OpenAPI Schema", footer: ["用于反思，不作预测", "源码"],
+    firstRequest: "第一个请求", quickDescription: "加载牌库和牌阵。一局牌需要的数据都来自这两个请求。",
+    quickFields: ["服务地址", "身份验证", "牌阵"],
+    auth: "无需密钥。", spreadChoice: "从这里选择牌阵：",
+    copied: "已复制", copy: "复制",
+    errors: "四个基础端点", endpointDescriptions: ["轻量级服务健康检查。", "按名称、关键词、描述、牌义、大阿卡那或花色搜索牌库，支持语言和分页。", "获取中英文牌面描述、正逆位牌义、来源说明及带版本的图片地址。", "列出可用牌阵、相对位置、对应语言的标签、位置牌池和解读指引。"],
+    equivalentCurl: "对应的 cURL 请求", statelessNote: "Franklin 不抽牌、不保存牌局，也不做解读。抽牌、正逆位和牌局状态都由你的应用负责；塔罗用于反思，不用于确定性预测。",
+    spreadTitle: "查看牌阵", spreadDescription: "牌阵图使用与 Frankie 应用相同的相对位置。数字表示抽牌顺序，下方列出每个位置的含义。", spreadLoadError: "无法加载牌阵布局，请刷新后重试。", spreadLoading: "正在加载牌阵…", spreadDataNote: "相对位置和本地化标签来自", spreadPoolNote: "每个位置的牌池决定该位置可以抽到哪些牌。", agentUse: "Agent 接入", restOrMcp: "REST 或 MCP", agentDescription: "可以体验 Frankie Tarot 应用，也可以自行构建界面。Franklin 还提供不含 UI 的 Agent MCP 接口：", agentInstruction: "Agent 可以查询牌和牌阵；抽牌由调用方应用负责。", tools: "工具", agentNote: "网页和插件是独立的示例应用。浏览器使用 REST；Agent 可使用 MCP 查询牌和牌阵。",
+    poolTitle: "牌池", poolDescription: "每个牌阵的 cardPools 为每个位置给出一个牌池。抽到的牌必须来自该位置的牌池，同一局不重复抽同一张牌。",
+    poolMembers: ["全部 78 张", "大阿卡那，maj00–maj21", "小阿卡那 1–10 号", "小阿卡那 11–14 号：侍从、骑士、王后、国王", "该花色的全部 14 张"], openapi: "OpenAPI Schema", footer: ["用于反思，不作预测", "源码"],
     positions: "按抽牌顺序排列", card: "张牌", cards: "张牌",
   },
 } satisfies Record<Locale, CopySet>;

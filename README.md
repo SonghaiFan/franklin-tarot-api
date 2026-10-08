@@ -1,8 +1,8 @@
 # Franklin Tarot API
 
-Stateless tarot data, seeded draws and reading context for applications and AI agents. REST and the UI-free Agent MCP use the same service implementation. The caller stores the reading; the service has no reading-history database or model API dependency.
+Read-only tarot data for applications and AI agents: 78 bilingual cards and the spread definitions, with positions and card pools. REST and the UI-free Agent MCP use the same service implementation. The calling app draws the cards and owns the reading; the service has no database or model API dependency.
 
-无状态塔罗服务：提供牌库、牌阵、可重放抽牌及后续解读上下文。调用方保存牌局，Agent 负责解读。
+只读塔罗数据服务：提供牌库和牌阵定义（含位置与牌池）。抽牌、流程和状态由调用方应用负责。
 
 ## Run locally
 
@@ -20,19 +20,15 @@ At `http://127.0.0.1:3001`:
 | `GET /api/v1/cards` | Search/filter 78 bilingual cards |
 | `GET /api/v1/cards/{id}` | Card detail; stable IDs such as `maj00` |
 | `GET /api/v1/spreads` | 11 real spreads and position rules |
-| `POST /api/v1/readings/draw` | Seeded draw and structured context |
-| `POST /api/v1/readings/context` | Validate a stored snapshot and rebuild context |
 | `/mcp/agent` | Stateless Streamable HTTP MCP |
 
 ```sh
-curl -sS http://127.0.0.1:3001/api/v1/readings/draw \
-  -H 'Content-Type: application/json' \
-  -d '{"spread":"THREE","locale":"en","seed":"my-first-reading"}'
+curl -sS "http://127.0.0.1:3001/api/v1/spreads?locale=en"
 ```
 
-Choose a spread from the catalog; `AUTO` is not drawable. Generate and retain a seed **before** sending if a retry must reproduce the draw. Save the returned `reading` object, then submit `{ "reading": ..., "question": "Follow-up", "locale": "en" }` to the context endpoint. The dataset and algorithm versions must still be supported; unavailable versions return `409`.
+Each spread gives one card pool per position (`cardPools`); `public/agents.md` defines the pool values. Drawing, orientation and reading state belong to the calling app.
 
-MCP tools: `search_tarot_cards`, `get_tarot_card`, `list_tarot_spreads`, `draw_tarot_reading`, `get_tarot_reading_context`. They execute the same validated service logic in-process, without making an HTTP request back to their own deployment. `npm run mcp:agent` provides the stdio transport.
+MCP tools: `search_tarot_cards`, `get_tarot_card`, `list_tarot_spreads`. They execute the same validated service logic in-process, without making an HTTP request back to their own deployment. `npm run mcp:agent` provides the stdio transport.
 
 ## Build, run and deploy
 
@@ -47,13 +43,13 @@ node scripts/api-smoke.mjs http://127.0.0.1:3001
 
 One build serves documentation, REST, MCP, OpenAPI and card artwork. Vercel deploys the repository using its single `vercel.json`; GitHub Actions runs checks. See [deployment instructions](docs/api-deployment.md).
 
-`npm run dev` previews documentation during editing. After building, `npm run api` serves the complete site locally. The online example uses the current origin and preserves the returned snapshot for follow-up.
+`npm run dev` previews documentation during editing. After building, `npm run api` serves the complete site locally. The online example calls the current origin.
 
 The independent [Frankie Tarot app](https://github.com/SonghaiFan/frankie-tarot) is the reference consumer, live at [tarot.songhai.site](https://tarot.songhai.site). Browsers use REST; its plugin adapter calls this service through MCP. There are no sibling source imports or local path dependencies.
 
 Public API: `https://tarot-api.songhai.site` · Agent MCP: `/mcp/agent` · [Developer documentation](https://tarot-api.songhai.site/).
 
-`npm run cli -- "Question" --spread THREE --locale en` returns the same JSON as REST/MCP. Only the v1 API and stable card IDs are supported.
+Only the v1 API and stable card IDs are supported.
 
 ## Data and interpretation
 

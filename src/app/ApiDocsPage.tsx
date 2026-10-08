@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import LiveExample from "./LiveExample";
 import SpreadLayout, { type Spread } from "./SpreadLayout";
 import TarotCard from "./TarotCard";
 import { ArrowUpRight, Check, ChevronDown, Copy, Github, Menu, X } from "lucide-react";
@@ -7,55 +6,22 @@ import { COPY, type Locale } from "./copy";
 
 const API_BASE = "https://tarot-api.songhai.site";
 
-const drawRequest = (locale: Locale) => `// Create and persist the seed before sending if retries must replay this draw.
-const seed = crypto.randomUUID();
-localStorage.setItem("pending-tarot-seed", seed);
+const quickstartRequest = (locale: Locale) => `const [{ cards }, { spreads }] = await Promise.all([
+  fetch("${API_BASE}/api/v1/cards?locale=${locale}&limit=78").then((response) => response.json()),
+  fetch("${API_BASE}/api/v1/spreads?locale=${locale}").then((response) => response.json()),
+]);
+// cards: all 78 cards with upright and reversed meanings.
+// spreads[].cardPools: which cards each position may draw.
+// Drawing, orientation and the reading itself stay in your app.`;
 
-const response = await fetch("${API_BASE}/api/v1/readings/draw", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
-    question: "${locale === "zh-CN" ? "今天有什么值得我关注？" : "What deserves my attention today?"}",
-    spread: "THREE",
-    locale: "${locale}",
-    seed
-  })
-});
-if (!response.ok) throw new Error((await response.json()).error.message);
-const { reading, context } = await response.json();
-localStorage.setItem("tarot-reading", JSON.stringify(reading));
-// Pass this same reading to /api/v1/readings/context for follow-ups.`;
+const quickstartCurl = (locale: Locale) => `curl "${API_BASE}/api/v1/spreads?locale=${locale}"`;
 
-const drawCurl = (locale: Locale) => `curl -X POST ${API_BASE}/api/v1/readings/draw \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "question": "${locale === "zh-CN" ? "今天有什么值得我关注？" : "What deserves my attention today?"}",
-    "spread": "THREE",
-    "locale": "${locale}",
-    "seed": "caller-generated-retry-token"
-  }'`;
-
-const drawResponse = `{
-  "reading": {
-    "readingId": "...",
-    "datasetVersion": "...",
-    "algorithmVersion": "sha256-counter-v1",
-    "seed": "caller-generated-retry-token",
-    "spreadId": "THREE",
-    "cards": [{ "positionIndex": 1, "cardId": "maj00", "orientation": "UPRIGHT" }]
-  },
-  "context": {
-    "question": "What deserves my attention today?",
-    "spread": { "id": "THREE", "cardCount": 3 },
-    "cards": [{ "positionLabel": "Past", "selectedMeaning": { "meaning": "..." } }]
-  },
-  "policy": "Tarot is offered for symbolic reflection..."
-}`;
+const POOLS = ["FULL", "MAJOR", "MINOR_PIP", "COURT", "SUIT_WANDS · SUIT_CUPS · SUIT_SWORDS · SUIT_PENTACLES"];
 
 // In dev the page talks to the deployed API, which also serves the card images.
 const API_ORIGIN = import.meta.env.DEV ? API_BASE : window.location.origin;
 
-const SECTION_IDS = ["overview", "quickstart", "endpoints", "spreads", "response"];
+const SECTION_IDS = ["overview", "quickstart", "endpoints", "spreads", "pools"];
 
 /** The app's small tracked caps: section eyebrows, list headers, metadata. */
 function Eyebrow({ children, className = "" }: { children: React.ReactNode; className?: string }) {
@@ -267,13 +233,12 @@ export default function ApiDocsPage() {
           </section>
 
           <section id="quickstart" className="scroll-mt-16 py-28">
-            <SectionHead index="01" eyebrow={copy.quickstart} title={copy.firstDraw}>{copy.quickDescription}</SectionHead>
+            <SectionHead index="01" eyebrow={copy.quickstart} title={copy.firstRequest}>{copy.quickDescription}</SectionHead>
             <dl className="mb-8 grid border border-white/10 sm:grid-cols-[140px_1fr]">
               {[
                 [copy.quickFields[0], <code key="u" className="break-all font-mono text-white/85">{API_BASE}</code>],
                 [copy.quickFields[1], copy.auth],
                 [copy.quickFields[2], <span key="s">{copy.spreadChoice} <code className="font-mono text-white/75">/api/v1/spreads</code>.</span>],
-                [copy.quickFields[3], copy.state],
               ].map(([term, detail], index) => (
                 <div key={index} className="contents">
                   <dt className={`px-5 pt-4 text-[12px] uppercase tracking-[0.12em] text-neutral-400 sm:py-4 ${index ? "border-t border-white/10" : ""}`}>{term}</dt>
@@ -281,10 +246,9 @@ export default function ApiDocsPage() {
                 </div>
               ))}
             </dl>
-            <LiveExample origin={API_ORIGIN} locale={locale} />
-            <CodeBlock locale={locale} label="javascript · fetch">{drawRequest(locale)}</CodeBlock>
+            <CodeBlock locale={locale} label="javascript · fetch">{quickstartRequest(locale)}</CodeBlock>
             <p className="mt-6 max-w-[62ch] text-[15px] font-light leading-7 text-neutral-400">{copy.statelessNote}</p>
-            <Disclosure summary={copy.equivalentCurl}><CodeBlock locale={locale} label="curl · draw">{drawCurl(locale)}</CodeBlock></Disclosure>
+            <Disclosure summary={copy.equivalentCurl}><CodeBlock locale={locale} label="curl · spreads">{quickstartCurl(locale)}</CodeBlock></Disclosure>
           </section>
 
           <section id="endpoints" className="scroll-mt-16 border-t border-white/10 py-28">
@@ -294,8 +258,6 @@ export default function ApiDocsPage() {
               <Endpoint method="GET" path="/api/v1/cards" description={copy.endpointDescriptions[1]}><CodeBlock locale={locale} label="request">{`curl "${API_BASE}/api/v1/cards?q=moon&locale=${locale}&limit=10"`}</CodeBlock></Endpoint>
               <Endpoint method="GET" path="/api/v1/cards/{id}" description={copy.endpointDescriptions[2]}><CodeBlock locale={locale} label="request">{`curl "${API_BASE}/api/v1/cards/maj00?locale=${locale}"`}</CodeBlock></Endpoint>
               <Endpoint method="GET" path="/api/v1/spreads" description={copy.endpointDescriptions[3]}><CodeBlock locale={locale} label="request">{`curl "${API_BASE}/api/v1/spreads?locale=${locale}"`}</CodeBlock></Endpoint>
-              <Endpoint method="POST" path="/api/v1/readings/draw" description={copy.endpointDescriptions[4]}><CodeBlock locale={locale} label="javascript · fetch">{drawRequest(locale)}</CodeBlock></Endpoint>
-              <Endpoint method="POST" path="/api/v1/readings/context" description={copy.endpointDescriptions[5]}><CodeBlock locale={locale} label="request">{`fetch("${API_BASE}/api/v1/readings/context", {\n  method: "POST",\n  headers: { "Content-Type": "application/json" },\n  body: JSON.stringify({ reading, question: "${locale === "zh-CN" ? "如果我等待呢？" : "And if I wait?"}", locale: "${locale}" })\n})`}</CodeBlock></Endpoint>
             </div>
           </section>
 
@@ -305,14 +267,14 @@ export default function ApiDocsPage() {
             </SectionHead>
             {spreads && <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3 xl:grid-cols-3 xl:gap-4">{spreads.map((spread) => <SpreadLayout key={spread.id} spread={spread} locale={locale} />)}</div>}
             {!spreads && <p role="status" className="border border-white/10 px-5 py-6 text-center text-[13px] tracking-wide text-neutral-400">{spreadError ? copy.spreadLoadError : copy.spreadLoading}</p>}
-            <p className="mt-6 text-[15px] font-light leading-7 text-neutral-400">{copy.spreadDataNote} <code className="font-mono text-white/80">GET /api/v1/spreads</code>; {locale === "zh-CN" ? "创建牌局时使用返回的牌阵 ID。" : "use the returned spread ID when creating a reading."}</p>
+            <p className="mt-6 text-[15px] font-light leading-7 text-neutral-400">{copy.spreadDataNote} <code className="font-mono text-white/80">GET /api/v1/spreads</code>; {copy.spreadPoolNote}</p>
 
             <div className="mt-28 border-t border-white/10 pt-28">
               <SectionHead index="04" eyebrow={copy.agentUse} title={copy.restOrMcp} />
               <p className="mb-8 max-w-[68ch] text-[16px] font-light leading-8 text-neutral-300">{copy.agentDescription} <code className="font-mono text-white/85">/mcp/agent</code>. {copy.agentInstruction} <a className="text-white underline decoration-white/30 underline-offset-4 transition-colors hover:decoration-white" href="/agents.md">{locale === "zh-CN" ? "阅读 Agent 接入指南" : "Read the Agent guide"}</a>. <a className="text-white underline decoration-white/30 underline-offset-4 transition-colors hover:decoration-white" href="https://tarot.songhai.site">{locale === "zh-CN" ? "体验 Frankie Tarot" : "Try Frankie Tarot"}</a>.</p>
               <Eyebrow className="mb-3">{copy.tools}</Eyebrow>
               <ul className="mb-10 border-t border-white/10">
-                {["search_tarot_cards", "get_tarot_card", "list_tarot_spreads", "draw_tarot_reading", "get_tarot_reading_context"].map((tool, index) => (
+                {["search_tarot_cards", "get_tarot_card", "list_tarot_spreads"].map((tool, index) => (
                   <li key={tool} className="flex items-baseline gap-4 border-b border-white/10 py-3">
                     <span className="font-mono text-[9px] text-white/30">0{index + 1}</span>
                     <code className="font-mono text-[14px] text-white/80">{tool}</code>
@@ -324,24 +286,17 @@ export default function ApiDocsPage() {
             </div>
           </section>
 
-          <section id="response" className="scroll-mt-16 border-t border-white/10 py-28">
-            <SectionHead index="05" eyebrow={copy.nav[4]} title={copy.predictable} />
-            <div className="grid gap-12 lg:grid-cols-[.8fr_1.2fr] lg:items-start">
-              <div>
-                <p className="text-[16px] font-light leading-8 text-neutral-300">{copy.responseDescription}</p>
-                <ul className="mt-8 border-t border-white/10 text-[15px] font-light leading-7 text-neutral-300">
-                  {[
-                    <><code className="font-mono text-white/85">reading.seed</code> · {copy.responseBullets[0]}</>,
-                    <><code className="font-mono text-white/85">context.cards[].selectedMeaning</code> · {copy.responseBullets[1]}</>,
-                    copy.responseBullets[2],
-                  ].map((item, index) => (
-                    <li key={index} className="flex gap-4 border-b border-white/10 py-4"><span className="mt-3 h-px w-4 shrink-0 bg-white/30" /><span>{item}</span></li>
-                  ))}
-                </ul>
-                <a className="mt-8 inline-flex items-center gap-2 border border-white/20 px-4 py-2.5 text-[13px] tracking-[0.1em] text-neutral-300 transition-colors duration-300 hover:border-white/50 hover:text-white" href={`${import.meta.env.BASE_URL}openapi.json`}>{copy.openapi} <ArrowUpRight size={14} strokeWidth={1.5} /></a>
-              </div>
-              <CodeBlock locale={locale} label="200 · application/json">{drawResponse}</CodeBlock>
-            </div>
+          <section id="pools" className="scroll-mt-16 border-t border-white/10 py-28">
+            <SectionHead index="05" eyebrow={copy.nav[4]} title={copy.poolTitle}>{copy.poolDescription}</SectionHead>
+            <dl className="grid border border-white/10 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
+              {POOLS.map((pool, index) => (
+                <div key={pool} className="contents">
+                  <dt className={`px-5 pt-4 font-mono text-[13px] leading-6 text-white/85 sm:py-4 ${index ? "border-t border-white/10" : ""}`}>{pool}</dt>
+                  <dd className={`px-5 pb-4 pt-1.5 text-[15px] font-light leading-7 text-neutral-300 sm:py-4 ${index ? "sm:border-t sm:border-white/10" : ""}`}>{copy.poolMembers[index]}</dd>
+                </div>
+              ))}
+            </dl>
+            <a className="mt-8 inline-flex items-center gap-2 border border-white/20 px-4 py-2.5 text-[13px] tracking-[0.1em] text-neutral-300 transition-colors duration-300 hover:border-white/50 hover:text-white" href={`${import.meta.env.BASE_URL}openapi.json`}>{copy.openapi} <ArrowUpRight size={14} strokeWidth={1.5} /></a>
           </section>
 
           <footer className="flex flex-col gap-4 border-t border-white/10 pt-8 text-[9px] font-light uppercase tracking-[0.3em] text-neutral-600 sm:flex-row sm:items-center sm:justify-between">
