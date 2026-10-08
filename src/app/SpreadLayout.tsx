@@ -43,11 +43,11 @@ function cardsFor(spread: Spread): IconCard[] {
 function SpreadDiagram({ spread }: { spread: Spread }) {
   const cards = cardsFor(spread);
   return (
-    <svg viewBox="0 0 24 24" role="img" aria-label={`${spread.name} relative card layout`} className="mx-auto my-6 h-36 w-full max-w-[200px] overflow-visible">
+    <svg viewBox="0 0 24 24" role="img" aria-label={`${spread.name} relative card layout`} className="mx-auto my-6 h-36 w-full max-w-[200px] overflow-visible transition-[filter] duration-500 group-hover:drop-shadow-[0_0_10px_rgba(255,255,255,0.18)]">
       {cards.map((card, index) => (
         <g key={index}>
-          <rect x={card.x} y={card.y} width={card.w} height={card.h} transform={card.rotate ? `rotate(${card.rotate} ${card.x + card.w / 2} ${card.y + card.h / 2})` : undefined} fill="#030308" stroke="rgba(255,255,255,.55)" strokeWidth="1" vectorEffect="non-scaling-stroke" className="transition-[stroke] duration-500 group-hover:stroke-white" />
-          <text x={card.x + card.w / 2} y={card.y + card.h / 2 + .7} textAnchor="middle" fill="rgba(255,255,255,.7)" fontFamily="Jost, ui-sans-serif, sans-serif" fontWeight="300" fontSize="1.8">{index + 1}</text>
+          <rect x={card.x} y={card.y} width={card.w} height={card.h} rx="0.9" ry="0.9" transform={card.rotate ? `rotate(${card.rotate} ${card.x + card.w / 2} ${card.y + card.h / 2})` : undefined} className="fill-white/70 transition-[fill] duration-500 group-hover:fill-white/95" />
+          <text x={card.x + card.w / 2} y={card.y + card.h / 2 + .65} textAnchor="middle" fill="#030308" fontFamily="Jost, ui-sans-serif, sans-serif" fontWeight="500" fontSize="1.8">{index + 1}</text>
         </g>
       ))}
     </svg>

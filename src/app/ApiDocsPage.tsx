@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import LiveExample from "./LiveExample";
 import SpreadLayout, { type Spread } from "./SpreadLayout";
-import { ArrowUpRight, Check, ChevronDown, Copy, Github, Menu, Moon, X } from "lucide-react";
+import TarotCard from "./TarotCard";
+import { ArrowUpRight, Check, ChevronDown, Copy, Github, Menu, X } from "lucide-react";
 
 const API_BASE = "https://tarot-api.songhai.site";
 
@@ -49,6 +50,9 @@ const drawResponse = `{
   },
   "policy": "Tarot is offered for symbolic reflection..."
 }`;
+
+// In dev the page talks to the deployed API, which also serves the card images.
+const API_ORIGIN = import.meta.env.DEV ? API_BASE : window.location.origin;
 
 const NAV = ["Overview", "Quickstart", "Endpoints", "Spreads", "Response"];
 
@@ -123,25 +127,15 @@ function Disclosure({ summary, children }: { summary: string; children: React.Re
   );
 }
 
-/** Two square cards fanned like the deck library's pack tiles, drawn in hairlines. */
+/** A back and a face fanned the way the app's deck library previews a pack. */
 function HeroCards() {
   return (
-    <div aria-hidden="true" className="relative mx-auto aspect-square w-full max-w-[240px] sm:max-w-[360px] lg:justify-self-end">
-      <div className="absolute left-[6%] top-[8%] aspect-[0.6] w-[52%] -rotate-8 border border-white/15 bg-[#07070c] p-2">
-        <div className="h-full w-full border border-white/[0.06] [background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.05)_0_1px,transparent_1px_9px)]" />
+    <div aria-hidden="true" className="relative mx-auto aspect-square w-full max-w-[260px] sm:max-w-[380px] lg:justify-self-end">
+      <div className="absolute left-[6.25%] top-[6.25%] w-[48%] -rotate-8">
+        <TarotCard side="back" />
       </div>
-      <div className="absolute right-[6%] top-0 aspect-[0.6] w-[52%] rotate-6 border border-white/40 bg-[#07070c] p-2 shadow-[0_30px_80px_rgba(0,0,0,.6)]">
-        <div className="flex h-full w-full flex-col justify-between border border-white/10 p-4">
-          <div className="flex justify-between text-[8px] font-light tracking-[0.3em] text-white/50"><span>0</span><span>0</span></div>
-          <div className="text-center">
-            <div className="mx-auto mb-5 grid size-16 place-items-center border border-white/25">
-              <Moon size={26} strokeWidth={0.75} className="text-white/80" />
-            </div>
-            <p className="font-cinzel text-[13px] tracking-[0.28em] text-white/90">THE FOOL</p>
-            <div className="mx-auto mt-3 h-px w-6 bg-white/30" />
-          </div>
-          <p className="text-center text-[7px] font-light tracking-[0.42em] text-white/35">FRANKLIN</p>
-        </div>
+      <div className="absolute right-[8.33%] top-0 w-[48%] rotate-6">
+        <TarotCard side="face" image={`${API_ORIGIN}/images/cards/maj00.webp`} name="The Fool" numeral="0" />
       </div>
     </div>
   );
@@ -175,9 +169,8 @@ export default function ApiDocsPage() {
   const active = useActiveSection(SECTION_IDS);
 
   useEffect(() => {
-    const origin = import.meta.env.DEV ? API_BASE : window.location.origin;
     let isMounted = true;
-    fetch(`${origin}/api/v1/spreads?locale=en`)
+    fetch(`${API_ORIGIN}/api/v1/spreads?locale=en`)
       .then((response) => {
         if (!response.ok) throw new Error("Could not load spread layouts.");
         return response.json();
@@ -276,7 +269,7 @@ export default function ApiDocsPage() {
                 </div>
               ))}
             </dl>
-            <LiveExample origin={import.meta.env.DEV ? API_BASE : window.location.origin} />
+            <LiveExample origin={API_ORIGIN} />
             <CodeBlock label="javascript · fetch">{drawRequest}</CodeBlock>
             <p className="mt-6 max-w-[62ch] text-[12px] font-light leading-6 text-neutral-500">The server never stores a question or reading. The agent or app interprets the structured context; tarot does not establish factual outcomes or probabilities.</p>
             <Disclosure summary="Equivalent cURL request"><CodeBlock label="curl · draw">{drawCurl}</CodeBlock></Disclosure>

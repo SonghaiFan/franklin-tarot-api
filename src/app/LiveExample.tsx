@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
+import TarotCard, { romanNumeralFor } from "./TarotCard";
 
-type Draw = { reading: Record<string, unknown>; context: { cards: Array<{ card: { id: string; name: string; imageUrls: { original: string } }; orientation: string }> } };
+type Draw = { reading: Record<string, unknown>; context: { cards: Array<{ card: { id: string; name: string; imageUrls: { redraw: string; original: string } }; orientation: string }> } };
 
 export default function LiveExample({ origin }: { origin: string }) {
   const [result, setResult] = useState<Draw | null>(null);
@@ -41,7 +42,7 @@ export default function LiveExample({ origin }: { origin: string }) {
         {result && <button disabled={busy} onClick={() => void run(true)} className={`${button} border-white/20 text-neutral-400 hover:border-white/50 hover:text-white`}>Follow up without redrawing</button>}
       </div>
       {error && <p role="alert" className="mt-4 text-[12px] text-red-200">{error}</p>}
-      {result && <div className="mt-8 grid grid-cols-3 gap-3 sm:gap-6">{result.context.cards.map(({ card, orientation }) => <figure key={card.id} className="min-w-0 text-center"><div className="mx-auto w-full max-w-28 border border-white/15 p-1"><img src={card.imageUrls.original} alt={card.name} className={`w-full ${orientation === "REVERSED" ? "rotate-180" : ""}`} /></div><figcaption className="mt-3"><span className="block font-cinzel text-[10px] uppercase tracking-[0.12em] text-white/80">{card.name}</span><span className="mt-1 block text-[9px] uppercase tracking-[0.24em] text-neutral-500">{orientation}</span></figcaption></figure>)}</div>}
+      {result && <div className="mt-8 grid grid-cols-3 gap-3 sm:gap-6">{result.context.cards.map(({ card, orientation }) => <figure key={card.id} className="mx-auto w-full max-w-36 min-w-0"><TarotCard side="face" image={card.imageUrls.redraw} name={card.name} numeral={romanNumeralFor(card.id)} reversed={orientation === "REVERSED"} /></figure>)}</div>}
       {lastPath && <p className="mt-6 break-all border-t border-white/10 pt-4 font-mono text-[10px] text-neutral-500" aria-live="polite">POST {origin}{lastPath}{context ? " · Same reading verified" : ""}</p>}
       {result && <details className="group mt-4"><summary className="cursor-pointer list-none text-[10px] uppercase tracking-[0.3em] text-neutral-500 transition-colors duration-300 hover:text-white [&::-webkit-details-marker]:hidden">{"+ "}Inspect JSON response</summary><pre className="mt-4 max-h-80 overflow-auto border border-white/10 bg-black/40 p-4 font-mono text-[11px] leading-[1.8] text-neutral-300">{JSON.stringify(context || result, null, 2)}</pre></details>}
     </div>
