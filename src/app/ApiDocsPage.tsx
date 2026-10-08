@@ -224,33 +224,33 @@ export default function ApiDocsPage() {
       <main className="relative mx-auto max-w-[1240px] px-5 lg:grid lg:grid-cols-[180px_minmax(0,1fr)] lg:gap-20 lg:px-8">
         <aside className="hidden lg:block">
           <div className="sticky top-16 pt-16">
-            <Eyebrow className="mb-6">On this page</Eyebrow>
+            <Eyebrow className="mb-6">{copy.onPage}</Eyebrow>
             <ol className="border-l border-white/10">
-              {NAV.map((item, index) => {
-                const isActive = active === item.toLowerCase();
+              {copy.nav.map((item, index) => {
+                const isActive = active === SECTION_IDS[index];
                 return (
-                  <li key={item}>
-                    <a href={`#${item.toLowerCase()}`} className={`-ml-px flex items-baseline gap-3 border-l py-2.5 pl-4 text-[11px] tracking-[0.16em] transition-colors duration-300 ${isActive ? "border-white text-white" : "border-transparent text-white/40 hover:text-white/75"}`}>
-                      <span className="font-mono text-[9px] text-white/30">0{index + 1}</span>{item}
+                  <li key={SECTION_IDS[index]}>
+                    <a href={`#${SECTION_IDS[index]}`} className={`-ml-px flex items-baseline gap-3 border-l py-2.5 pl-4 text-[13px] tracking-[0.08em] transition-colors duration-300 ${isActive ? "border-white text-white" : "border-transparent text-white/40 hover:text-white/75"}`}>
+                      <span className="font-mono text-[11px] text-white/30">0{index + 1}</span>{item}
                     </a>
                   </li>
                 );
               })}
             </ol>
-            <p className="mt-12 border-t border-white/10 pt-6 text-[11px] font-light leading-6 text-neutral-500">Stateless REST and MCP primitives. Your app or agent keeps the reading snapshot.</p>
+            <p className="mt-12 border-t border-white/10 pt-6 text-[14px] font-light leading-7 text-neutral-500">{copy.asideNote}</p>
           </div>
         </aside>
 
         <div className="min-w-0 pb-24">
           <section id="overview" className="grid scroll-mt-16 items-center gap-16 py-20 lg:min-h-[560px] lg:grid-cols-[1.1fr_.9fr] lg:py-28">
             <div>
-              <Eyebrow>REST API · MCP · Open source</Eyebrow>
-              <h1 className="mt-8 text-[clamp(30px,4.6vw,52px)] font-light leading-[1.15] tracking-[0.42em] text-white">TAROT<br />API</h1>
+              <Eyebrow>{copy.heroEyebrow}</Eyebrow>
+              <h1 className="mt-8 text-[clamp(36px,5vw,60px)] font-light leading-[1.15] tracking-[0.32em] text-white">TAROT<br />API</h1>
               <div className="mt-8 h-px w-8 bg-white/40" />
-              <p className="mt-8 max-w-[440px] text-[14px] font-light leading-8 text-neutral-400">A stateless tarot service for apps and AI agents: browse 78 cards, choose from 11 real spreads, make replayable draws, and rebuild verified context for follow-ups.</p>
+              <p className="mt-8 max-w-[500px] text-[17px] font-light leading-8 text-neutral-300">{copy.heroDescription}</p>
               <div className="mt-10 flex flex-wrap gap-3">
-                <a href="#quickstart" className="inline-flex items-center gap-2 border border-white bg-white px-5 py-3 text-[10px] uppercase tracking-[0.3em] text-black transition-colors duration-300 hover:bg-white/85">Quickstart <ArrowUpRight size={12} strokeWidth={1.5} /></a>
-                <a href="#endpoints" className="inline-flex items-center gap-2 border border-white/20 px-5 py-3 text-[10px] uppercase tracking-[0.3em] text-neutral-400 transition-colors duration-300 hover:border-white/50 hover:text-white">Reference</a>
+                <a href="#quickstart" className="inline-flex items-center gap-2 border border-white bg-white px-5 py-3 text-[13px] tracking-[0.12em] text-black transition-colors duration-300 hover:bg-white/85">{copy.quickstart} <ArrowUpRight size={14} strokeWidth={1.5} /></a>
+                <a href="#endpoints" className="inline-flex items-center gap-2 border border-white/20 px-5 py-3 text-[13px] tracking-[0.1em] text-neutral-300 transition-colors duration-300 hover:border-white/50 hover:text-white">{copy.reference}</a>
               </div>
             </div>
             <HeroCards />
