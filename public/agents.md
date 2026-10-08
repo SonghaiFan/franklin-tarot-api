@@ -12,7 +12,7 @@ This page is written for AI agents and the developers who connect them to Frankl
 
 Franklin knows the cards and the spreads, and nothing else. It serves the 78-card catalog with bilingual meanings, and the spread definitions: positions, localized labels, interpretation guidance, and a card pool for each position.
 
-The calling application owns everything about a reading: the user's question and consent, drawing the cards, deciding upright or reversed, the flow, and any state. Franklin does not draw, store, or interpret readings.
+The calling application owns everything about a reading: the user's question and consent, drawing cards for a spread, deciding upright or reversed, the flow, and any state. Franklin can hand out random distinct cards, but it does not lay out, store, or interpret readings.
 
 Use tarot as symbolic material for reflection. Do not state card meanings as facts, probabilities, or certain predictions. The card dataset is project-curated; per-field source attribution has not been independently verified.
 
@@ -24,27 +24,31 @@ Each spread lists one pool per position in `cardPools`. A drawn card must belong
 | --- | --- |
 | `FULL` | All 78 cards |
 | `MAJOR` | Major arcana, IDs `maj00`–`maj21` |
-| `MINOR_PIP` | Minor arcana ranks 1–10 |
-| `COURT` | Minor arcana ranks 11–14 (Page, Knight, Queen, King) |
-| `SUIT_WANDS`, `SUIT_CUPS`, `SUIT_SWORDS`, `SUIT_PENTACLES` | All 14 cards of that suit (IDs `wandsNN`, `cupsNN`, `swordsNN`, `pentsNN`) |
+| `MINOR_PIP` | Minor arcana with `rank` 1–10 |
+| `COURT` | Minor arcana with `rank` 11–14 (Page, Knight, Queen, King) |
+| `SUIT_WANDS`, `SUIT_CUPS`, `SUIT_SWORDS`, `SUIT_PENTACLES` | All 14 cards whose `suit` matches |
+
+Every card carries `arcana`, `suit` (null for major arcana) and `rank`, so pools can be checked from the card data alone.
 
 ## REST endpoints
 
 | Method and path | Purpose |
 | --- | --- |
 | `GET /health` | Check service health and API version |
-| `GET /api/v1/cards?q=moon&locale=en&limit=10` | Search cards; optional `arcana`, `suit`, `offset` |
+| `GET /api/v1/cards?q=moon&locale=en` | Every matching card; optional `arcana`, `suit` |
+| `GET /api/v1/cards/random?n=3&locale=en` | `n` distinct random cards (1–78, default 1), without orientation |
 | `GET /api/v1/cards/{id}?locale=en` | Retrieve one stable card ID, such as `maj00` |
 | `GET /api/v1/spreads?locale=en` | Retrieve spread IDs, card counts, layout positions, localized labels, card pools, and interpretation guidance |
 
-Card search accepts `q` up to 120 characters, `limit` from 1 to 78, and `offset` from 0. Any method other than `GET` returns `405`.
+Card search accepts `q` up to 120 characters. Any method other than `GET` returns `405`.
 
 ## MCP tools
 
-Connect to `https://tarot-api.songhai.site/mcp/agent` using Streamable HTTP. The server exposes these read-only, idempotent tools:
+Connect to `https://tarot-api.songhai.site/mcp/agent` using Streamable HTTP. The server exposes these read-only tools:
 
 - `search_tarot_cards`: search by name, keyword, description, or meaning; optional arcana and suit filters.
 - `get_tarot_card`: retrieve one card by stable `cardId`, such as `maj00`.
+- `get_random_tarot_cards`: `n` distinct random cards, without orientation. Not idempotent.
 - `list_tarot_spreads`: list the spreads with their positions and card pools.
 
 ## Errors
@@ -67,7 +71,7 @@ Errors use a JSON envelope such as `{ "error": { "code": "VALIDATION_ERROR", "me
 
 Franklin 只知道牌和牌阵：提供 78 张牌的中英文牌义，以及牌阵定义，包括位置、本地化标签、解读指引和每个位置的牌池。
 
-牌局的一切由调用方应用负责：用户的问题与抽牌意愿、抽牌、正逆位、流程和状态。Franklin 不抽牌、不保存牌局，也不做解读。
+牌局的一切由调用方应用负责：用户的问题与抽牌意愿、按牌阵抽牌、正逆位、流程和状态。Franklin 可以随机给出不重复的牌，但不排牌阵、不保存牌局，也不做解读。
 
 塔罗用于象征性反思。不要把牌义说成事实、概率或确定的预言。牌库由项目整理，尚未逐字段独立核实来源归属。
 
@@ -79,27 +83,31 @@ Franklin 只知道牌和牌阵：提供 78 张牌的中英文牌义，以及牌�
 | --- | --- |
 | `FULL` | 全部 78 张 |
 | `MAJOR` | 大阿卡那，ID 为 `maj00`–`maj21` |
-| `MINOR_PIP` | 小阿卡那 1–10 号 |
-| `COURT` | 小阿卡那 11–14 号（侍从、骑士、王后、国王） |
-| `SUIT_WANDS`、`SUIT_CUPS`、`SUIT_SWORDS`、`SUIT_PENTACLES` | 该花色的全部 14 张（ID 为 `wandsNN`、`cupsNN`、`swordsNN`、`pentsNN`） |
+| `MINOR_PIP` | `rank` 为 1–10 的小阿卡那 |
+| `COURT` | `rank` 为 11–14 的小阿卡那（侍从、骑士、王后、国王） |
+| `SUIT_WANDS`、`SUIT_CUPS`、`SUIT_SWORDS`、`SUIT_PENTACLES` | `suit` 匹配的全部 14 张 |
+
+每张牌都带有 `arcana`、`suit`（大阿卡那为 null）和 `rank`，只看牌的数据就能判断牌池。
 
 ## REST 端点
 
 | 方法与路径 | 用途 |
 | --- | --- |
 | `GET /health` | 检查服务和 API 版本 |
-| `GET /api/v1/cards?q=月亮&locale=zh-CN&limit=10` | 搜索卡牌；还可使用 `arcana`、`suit`、`offset` |
+| `GET /api/v1/cards?q=月亮&locale=zh-CN` | 返回全部匹配的牌；还可使用 `arcana`、`suit` |
+| `GET /api/v1/cards/random?n=3&locale=zh-CN` | 随机返回 `n` 张不重复的牌（1–78，默认 1），不含正逆位 |
 | `GET /api/v1/cards/{id}?locale=zh-CN` | 查询稳定 ID 的牌，例如 `maj00` |
 | `GET /api/v1/spreads?locale=zh-CN` | 获取牌阵 ID、张数、位置布局、本地化标签、牌池和解读指引 |
 
-卡牌搜索的 `q` 最长 120 字符，`limit` 为 1 至 78，`offset` 不小于 0。`GET` 以外的请求返回 `405`。
+卡牌搜索的 `q` 最长 120 字符。`GET` 以外的请求返回 `405`。
 
 ## MCP 工具
 
-使用 Streamable HTTP 连接 `https://tarot-api.songhai.site/mcp/agent`。服务提供以下只读、幂等的工具：
+使用 Streamable HTTP 连接 `https://tarot-api.songhai.site/mcp/agent`。服务提供以下只读工具：
 
 - `search_tarot_cards`：按名称、关键词、描述或牌义搜索，可筛选大/小阿卡那和花色。
 - `get_tarot_card`：按稳定的 `cardId` 查询单张牌，例如 `maj00`。
+- `get_random_tarot_cards`：随机返回 `n` 张不重复的牌，不含正逆位；结果每次不同。
 - `list_tarot_spreads`：列出牌阵及其位置和牌池。
 
 ## 错误

@@ -17,7 +17,8 @@ At `http://127.0.0.1:3001`:
 | --- | --- |
 | `GET /health` | Service health |
 | `GET /openapi.json` | OpenAPI 3.1 schema |
-| `GET /api/v1/cards` | Search/filter 78 bilingual cards |
+| `GET /api/v1/cards` | All 78 bilingual cards, or those matching `q`, `arcana`, `suit` |
+| `GET /api/v1/cards/random?n=3` | `n` distinct random cards, without orientation |
 | `GET /api/v1/cards/{id}` | Card detail; stable IDs such as `maj00` |
 | `GET /api/v1/spreads` | 11 real spreads and position rules |
 | `/mcp/agent` | Stateless Streamable HTTP MCP |
@@ -28,7 +29,7 @@ curl -sS "http://127.0.0.1:3001/api/v1/spreads?locale=en"
 
 Each spread gives one card pool per position (`cardPools`); `public/agents.md` defines the pool values. Drawing, orientation and reading state belong to the calling app.
 
-MCP tools: `search_tarot_cards`, `get_tarot_card`, `list_tarot_spreads`. They execute the same validated service logic in-process, without making an HTTP request back to their own deployment. `npm run mcp:agent` provides the stdio transport.
+MCP tools: `search_tarot_cards`, `get_tarot_card`, `list_tarot_spreads`, `get_random_tarot_cards`. They execute the same validated service logic in-process, without making an HTTP request back to their own deployment. `npm run mcp:agent` provides the stdio transport.
 
 ## Build, run and deploy
 

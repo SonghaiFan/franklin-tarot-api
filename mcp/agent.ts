@@ -1,24 +1,35 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { getCard, listCards, listCardsQuerySchema, listSpreads } from "../src/api/core";
+import { getCard, listCards, listCardsQuerySchema, listSpreads, randomCards, randomCardsQuerySchema } from "../src/api/core";
 
 const localeSchema = z.enum(["en", "zh-CN"]).default("zh-CN");
-const cardsOutput = z.object({ cards: z.array(z.any()), total: z.number(), limit: z.number(), offset: z.number(), locale: z.enum(["en", "zh-CN"]), datasetVersion: z.string() });
+const cardsOutput = z.object({ cards: z.array(z.any()), locale: z.enum(["en", "zh-CN"]) });
 const spreadOutput = z.object({ spreads: z.array(z.any()), locale: z.enum(["en", "zh-CN"]) });
 export function createAgentMcpServer(apiOrigin = process.env.PUBLIC_API_BASE_URL || "http://127.0.0.1:3001") {
   const server = new McpServer({ name: "franklin-tarot-agent", version: "1.0.0" }, {
-    instructions: "Tools provide tarot card references and spread definitions (positions, labels and per-position card pools) for symbolic reflection. Franklin does not draw cards; the calling application owns the draw. Do not present tarot as factual prediction, certainty, or probability. Card meanings are project-curated and field-level source attribution is not independently verified.",
+    instructions: "Tools provide tarot card references and spread definitions (positions, labels and per-position card pools) for symbolic reflection. get_random_tarot_cards returns distinct random cards without orientation; spreads, orientation and the reading itself belong to the calling application. Do not present tarot as factual prediction, certainty, or probability. Card meanings are project-curated and field-level source attribution is not independently verified.",
   });
 
   server.registerTool("search_tarot_cards", {
     title: "Search tarot cards",
-    description: "Search the 78-card deck by name, keyword, description or meaning. Optionally filter by arcana or suit. Returns a compact, paginated result.",
-    inputSchema: { q: z.string().trim().max(120).optional(), arcana: z.enum(["MAJOR", "MINOR"]).optional(), suit: z.enum(["WANDS", "CUPS", "SWORDS", "PENTACLES"]).optional(), locale: localeSchema, limit: z.number().int().min(1).max(78).default(12), offset: z.number().int().min(0).max(10000).default(0) },
+    description: "Search the 78-card deck by name, keyword, description or meaning. Optionally filter by arcana or suit. Returns every matching card.",
+    inputSchema: { q: z.string().trim().max(120).optional(), arcana: z.enum(["MAJOR", "MINOR"]).optional(), suit: z.enum(["WANDS", "CUPS", "SWORDS", "PENTACLES"]).optional(), locale: localeSchema },
     outputSchema: cardsOutput,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
   }, async (args) => {
     const query = listCardsQuerySchema.parse(args);
     const payload = listCards(query, apiOrigin);
+    return { structuredContent: payload, content: [{ type: "text", text: JSON.stringify(payload) }] };
+  });
+
+  server.registerTool("get_random_tarot_cards", {
+    title: "Get random tarot cards",
+    description: "Return n distinct cards in random order (1–78, default 1). Cards carry no orientation; the caller decides upright or reversed.",
+    inputSchema: { n: z.number().int().min(1).max(78).default(1), locale: localeSchema },
+    outputSchema: cardsOutput,
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+  }, async (args) => {
+    const payload = randomCards(randomCardsQuerySchema.parse(args), apiOrigin);
     return { structuredContent: payload, content: [{ type: "text", text: JSON.stringify(payload) }] };
   });
 

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { API_VERSION, getCard, listCards, listCardsQuerySchema, listSpreads } from "./core";
+import { API_VERSION, getCard, listCards, listCardsQuerySchema, listSpreads, randomCards, randomCardsQuerySchema } from "./core";
 import openApiDocument from "../../public/openapi.json";
 
 const cors = {
@@ -26,6 +26,11 @@ export async function handleTarotApi(request: Request): Promise<Response> {
     const parsed = listCardsQuerySchema.safeParse(Object.fromEntries(url.searchParams));
     if (!parsed.success) return zodError(parsed.error);
     return json(listCards(parsed.data, origin));
+  }
+  if (request.method === "GET" && path === "/api/v1/cards/random") {
+    const parsed = randomCardsQuerySchema.safeParse(Object.fromEntries(url.searchParams));
+    if (!parsed.success) return zodError(parsed.error);
+    return json(randomCards(parsed.data, origin), 200, { "Cache-Control": "no-store" });
   }
   const cardMatch = path.match(/^\/api\/v1\/cards\/([^/]+)$/);
   if (request.method === "GET" && cardMatch) {

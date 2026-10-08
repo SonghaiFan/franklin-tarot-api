@@ -1,4 +1,4 @@
-import { createHash } from "node:crypto";
+import { createHash, randomInt } from "node:crypto";
 import { z } from "zod";
 import groundTruth from "../data/tarot.json";
 
@@ -41,6 +41,8 @@ export function getCard(cardId: string, locale: ApiLocale, origin: string) {
     names: { en: source.name.en, "zh-CN": source.name["zh-CN"] },
     arcana: source.numericId < 22 ? "MAJOR" : "MINOR",
     suit: suitFor(id),
+    // Major arcana: their number, 0–21. Minor arcana: 1–10 pips, 11–14 Page, Knight, Queen, King.
+    rank: Number(id.match(/(\d+)$/)![1]),
     imageUrls: urls,
     keywords: { en: source.keywords.en, "zh-CN": source.keywords["zh-CN"] },
     description: { en: source.description.en ?? "", "zh-CN": source.description["zh-CN"] ?? "" },
@@ -61,8 +63,6 @@ export const listCardsQuerySchema = z.object({
   arcana: z.enum(["MAJOR", "MINOR"]).optional(),
   suit: z.enum(["WANDS", "CUPS", "SWORDS", "PENTACLES"]).optional(),
   locale: localeSchema.default("zh-CN"),
-  limit: z.coerce.number().int().min(1).max(78).default(20),
-  offset: z.coerce.number().int().min(0).max(10000).default(0),
 });
 export type ListCardsQuery = z.infer<typeof listCardsQuerySchema>;
 
@@ -78,7 +78,23 @@ export function listCards(query: ListCardsQuery, origin: string) {
     }
     return [card];
   });
-  return { cards: filtered.slice(query.offset, query.offset + query.limit), total: filtered.length, limit: query.limit, offset: query.offset, locale: query.locale, datasetVersion: DATASET_VERSION };
+  return { cards: filtered, locale: query.locale };
+}
+
+export const randomCardsQuerySchema = z.object({
+  n: z.coerce.number().int().min(1).max(78).default(1),
+  locale: localeSchema.default("zh-CN"),
+});
+export type RandomCardsQuery = z.infer<typeof randomCardsQuerySchema>;
+
+/** n distinct cards in random order. Orientation and spreads belong to the caller. */
+export function randomCards(query: RandomCardsQuery, origin: string, random: (max: number) => number = randomInt) {
+  const ids = [...CARD_IDS];
+  for (let index = 0; index < query.n; index++) {
+    const pick = index + random(ids.length - index);
+    [ids[index], ids[pick]] = [ids[pick], ids[index]];
+  }
+  return { cards: ids.slice(0, query.n).map((id) => getCard(id, query.locale, origin)!), locale: query.locale };
 }
 
 export function listSpreads(locale: ApiLocale) {

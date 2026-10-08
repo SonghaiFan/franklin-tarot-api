@@ -51,14 +51,14 @@ console.log("PASS documentation homepage and removed legacy routes");
 const health = await json("/health");
 assert.equal(health.status, "ok");
 assert.equal((await json("/openapi.json")).openapi, "3.1.0");
-const cards = await json("/api/v1/cards?limit=78&locale=en");
-assert.equal(cards.total, 78);
+const cards = await json("/api/v1/cards?locale=en");
 assert.equal(cards.cards.length, 78);
 assert.equal((await json("/api/v1/spreads?locale=en")).spreads.length, 11);
 assert.equal((await json("/api/v1/cards/maj00?locale=en")).id, "maj00");
 console.log("PASS health, OpenAPI, 78 cards, 11 spreads, card detail");
 
-assert.equal((await json("/api/v1/cards?limit=0", {}, 400)).error.code, "VALIDATION_ERROR");
+assert.equal((await json("/api/v1/cards/random?n=0", {}, 400)).error.code, "VALIDATION_ERROR");
+assert.equal((await json("/api/v1/cards/random?n=3&locale=en")).cards.length, 3);
 assert.equal((await json("/api/v1/cards", post({}), 405)).error.code, "METHOD_NOT_ALLOWED");
 console.log("PASS input errors and read-only routes");
 
@@ -70,12 +70,13 @@ async function rpc(method, params) {
   return message.result;
 }
 await rpc("initialize", { protocolVersion: "2025-03-26", capabilities: {}, clientInfo: { name: "tarot-deployment-smoke", version: "1.0.0" } });
-assert.equal((await rpc("tools/list", {})).tools.length, 3);
+assert.equal((await rpc("tools/list", {})).tools.length, 4);
 const tool = async (name, args) => (await rpc("tools/call", { name, arguments: args })).structuredContent;
 assert.equal((await tool("list_tarot_spreads", { locale: "en" })).spreads.length, 11);
-assert.equal((await tool("search_tarot_cards", { locale: "en", limit: 1 })).total, 78);
+assert.equal((await tool("search_tarot_cards", { locale: "en" })).cards.length, 78);
+assert.equal((await tool("get_random_tarot_cards", { n: 3, locale: "en" })).cards.length, 3);
 assert.equal((await tool("get_tarot_card", { cardId: "maj00", locale: "en" })).card.id, "maj00");
-console.log("PASS MCP initialization, all three tools");
+console.log("PASS MCP initialization, all four tools");
 
 for (const url of Object.values(cards.cards[0].imageUrls)) {
   const assetUrl = new URL(url);

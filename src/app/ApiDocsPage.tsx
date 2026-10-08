@@ -7,10 +7,10 @@ import { COPY, type Locale } from "./copy";
 const API_BASE = "https://tarot-api.songhai.site";
 
 const quickstartRequest = (locale: Locale) => `const [{ cards }, { spreads }] = await Promise.all([
-  fetch("${API_BASE}/api/v1/cards?locale=${locale}&limit=78").then((response) => response.json()),
+  fetch("${API_BASE}/api/v1/cards?locale=${locale}").then((response) => response.json()),
   fetch("${API_BASE}/api/v1/spreads?locale=${locale}").then((response) => response.json()),
 ]);
-// cards: all 78 cards with upright and reversed meanings.
+// cards: all 78 cards with arcana, suit, rank and both meanings.
 // spreads[].cardPools: which cards each position may draw.
 // Drawing, orientation and the reading itself stay in your app.`;
 
@@ -255,7 +255,8 @@ export default function ApiDocsPage() {
             <SectionHead index="02" eyebrow={copy.nav[2]} title={copy.errors} />
             <div>
               <Endpoint method="GET" path="/health" description={copy.endpointDescriptions[0]}><CodeBlock locale={locale} label="request">{`curl "${API_BASE}/health"`}</CodeBlock></Endpoint>
-              <Endpoint method="GET" path="/api/v1/cards" description={copy.endpointDescriptions[1]}><CodeBlock locale={locale} label="request">{`curl "${API_BASE}/api/v1/cards?q=moon&locale=${locale}&limit=10"`}</CodeBlock></Endpoint>
+              <Endpoint method="GET" path="/api/v1/cards" description={copy.endpointDescriptions[1]}><CodeBlock locale={locale} label="request">{`curl "${API_BASE}/api/v1/cards?q=moon&locale=${locale}"`}</CodeBlock></Endpoint>
+              <Endpoint method="GET" path="/api/v1/cards/random" description={copy.endpointDescriptions[4]}><CodeBlock locale={locale} label="request">{`curl "${API_BASE}/api/v1/cards/random?n=3&locale=${locale}"`}</CodeBlock></Endpoint>
               <Endpoint method="GET" path="/api/v1/cards/{id}" description={copy.endpointDescriptions[2]}><CodeBlock locale={locale} label="request">{`curl "${API_BASE}/api/v1/cards/maj00?locale=${locale}"`}</CodeBlock></Endpoint>
               <Endpoint method="GET" path="/api/v1/spreads" description={copy.endpointDescriptions[3]}><CodeBlock locale={locale} label="request">{`curl "${API_BASE}/api/v1/spreads?locale=${locale}"`}</CodeBlock></Endpoint>
             </div>
@@ -274,7 +275,7 @@ export default function ApiDocsPage() {
               <p className="mb-8 max-w-[68ch] text-[16px] font-light leading-8 text-neutral-300">{copy.agentDescription} <code className="font-mono text-white/85">/mcp/agent</code>. {copy.agentInstruction} <a className="text-white underline decoration-white/30 underline-offset-4 transition-colors hover:decoration-white" href="/agents.md">{locale === "zh-CN" ? "阅读 Agent 接入指南" : "Read the Agent guide"}</a>. <a className="text-white underline decoration-white/30 underline-offset-4 transition-colors hover:decoration-white" href="https://tarot.songhai.site">{locale === "zh-CN" ? "体验 Frankie Tarot" : "Try Frankie Tarot"}</a>.</p>
               <Eyebrow className="mb-3">{copy.tools}</Eyebrow>
               <ul className="mb-10 border-t border-white/10">
-                {["search_tarot_cards", "get_tarot_card", "list_tarot_spreads"].map((tool, index) => (
+                {["search_tarot_cards", "get_tarot_card", "list_tarot_spreads", "get_random_tarot_cards"].map((tool, index) => (
                   <li key={tool} className="flex items-baseline gap-4 border-b border-white/10 py-3">
                     <span className="font-mono text-[9px] text-white/30">0{index + 1}</span>
                     <code className="font-mono text-[14px] text-white/80">{tool}</code>
