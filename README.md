@@ -217,6 +217,10 @@ curl "https://tarot-api.songhai.site/api/v1/spreads/COURT/draw?locale=en"
 }
 ```
 
+Server draws are intended for other API consumers and AI agents whose users explicitly request a delegated draw. Opening Frankie, choosing a spread, or asking to choose cards manually is not consent to a server draw or interpretation. Frankie continues to draw locally.
+
+Each call is a fresh random sample (it may coincidentally match a previous sample). There is no public seed, idempotency key, reading ID or recovery endpoint. Do not automatically retry a draw as if it were the same reading. Persist a successful response and caller-chosen orientations; after an uncertain failure, explain that another call is a new draw and require an explicit retry decision. `positionIndex` is one-based and follows the spread's labels and pools; preserve that order when saving or presenting results.
+
 ### Card pools
 
 | Pool | Cards |
@@ -318,7 +322,7 @@ node scripts/api-smoke.mjs http://127.0.0.1:3001
 
 One build serves documentation, REST, MCP, OpenAPI and card artwork. Vercel deploys the repository using its single `vercel.json`; GitHub Actions runs checks. See [deployment instructions](docs/api-deployment.md). `npm run dev` previews the documentation site while editing.
 
-The independent [Frankie Tarot app](https://github.com/SonghaiFan/frankie-tarot) is the reference consumer, live at [tarot.songhai.site](https://tarot.songhai.site). It loads cards and spreads and draws spreads over REST, then decides orientation itself. There are no sibling source imports or local path dependencies.
+The independent [Frankie Tarot app](https://github.com/SonghaiFan/frankie-tarot) is the reference consumer, live at [tarot.songhai.site](https://tarot.songhai.site). It loads the card and spread catalogs over REST, then shuffles locally and lets the user choose face-down tiles. Frankie owns orientation, private session recovery and explicit interpretation requests. It does not call the server draw endpoint. There are no sibling source imports or local path dependencies.
 
 Only the v1 API and stable card IDs are supported.
 

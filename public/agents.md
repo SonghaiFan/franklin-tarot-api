@@ -16,6 +16,10 @@ Franklin also draws: given a spread, it returns one random card per position fro
 
 Use tarot as symbolic material for reflection. Do not state card meanings as facts, probabilities, or certain predictions. The card dataset is project-curated; per-field source attribution has not been independently verified.
 
+Server draws are intended for other API consumers and AI agents whose users explicitly request a delegated draw. Opening Frankie, choosing a spread, or asking to choose cards manually is not consent to a server draw or interpretation. Frankie continues to draw locally.
+
+Each call is a fresh random sample (it may coincidentally match a previous sample). There is no public seed, idempotency key, reading ID or recovery endpoint. Do not automatically retry a draw as if it were the same reading. Persist a successful response and caller-chosen orientations; after an uncertain failure, explain that another call is a new draw and require an explicit retry decision. `positionIndex` is one-based and follows the spread's labels and pools; preserve that order when saving or presenting results.
+
 ## Card pools
 
 Each spread lists one pool per position in `cardPools`. `GET /api/v1/spreads/{spreadId}/draw` takes each position's card from its pool and never repeats a card.
@@ -77,6 +81,10 @@ Franklin 也负责抽牌：给定牌阵，按每个位置的牌池随机抽一�
 
 塔罗用于象征性反思。不要把牌义说成事实、概率或确定的预言。牌库由项目整理，尚未逐字段独立核实来源归属。
 
+Frankie 交互界面仅加载牌库和牌阵，在本地洗牌，由用户点击选牌。服务端抽牌主要面向其他 API 消费者和获得用户明确抽牌授权的 Agent；打开牌桌、选择牌阵不等于同意代抽或解读。
+
+没有公开 seed、幂等键或牌局恢复接口。每次调用重新随机采样，结果可能偶然相同。请保存成功响应及正逆位；失败后不要把重试当作同一次抽牌，结果不明时应说明再次调用会重新抽牌，并等待用户明确选择重试。positionIndex 从 1 开始，对应牌阵标签和牌池的顺序。
+
 ## 牌池
 
 每个牌阵的 `cardPools` 为每个位置给出一个牌池。`GET /api/v1/spreads/{spreadId}/draw` 从每个位置的牌池里抽牌，同一局不重复。
@@ -110,9 +118,9 @@ Franklin 也负责抽牌：给定牌阵，按每个位置的牌池随机抽一�
 
 - `search_tarot_cards`：按名称、关键词、描述或牌义搜索，可筛选大/小阿卡那和花色。
 - `get_tarot_card`：按稳定的 `cardId` 查询单张牌，例如 `maj00`。
-- `get_random_tarot_cards`：随机返回 `n` 张不重复的牌，不含正逆位；结果每次不同。
+- `get_random_tarot_cards`：随机返回 `n` 张不重复的牌，不含正逆位；每次重新随机采样。
 - `list_tarot_spreads`：列出牌阵及其位置和牌池。
-- `draw_tarot_spread`：为牌阵的每个位置抽一张牌，不含正逆位；结果每次不同。
+- `draw_tarot_spread`：为牌阵的每个位置抽一张牌，不含正逆位；每次重新随机采样。
 
 ## 错误
 
