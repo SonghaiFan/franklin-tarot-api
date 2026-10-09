@@ -7,7 +7,7 @@ const cardsOutput = z.object({ cards: z.array(z.any()), locale: z.enum(["en", "z
 const spreadOutput = z.object({ spreads: z.array(z.any()), locale: z.enum(["en", "zh-CN"]) });
 export function createAgentMcpServer(apiOrigin = process.env.PUBLIC_API_BASE_URL || "http://127.0.0.1:3001") {
   const server = new McpServer({ name: "franklin-tarot-agent", version: "1.0.0" }, {
-    instructions: "Tools provide tarot card references and spread definitions (positions, labels and per-position card pools) for symbolic reflection. draw_tarot_spread draws one card per position from a spread's card pools, and get_random_tarot_cards returns distinct random cards; neither decides orientation, which belongs to the calling application with the reading itself. Do not present tarot as factual prediction, certainty, or probability. Card meanings are project-curated and field-level source attribution is not independently verified.",
+    instructions: "Tools provide tarot card references and spread definitions (positions, labels and per-position card pools) for symbolic reflection. draw_tarot_spread draws one card per position from a spread's card pools, and get_random_tarot_cards returns distinct random cards; neither decides orientation, which belongs to the calling application with the reading itself. Only draw after the user explicitly asks for a delegated draw; opening Frankie or asking to choose cards manually is not permission. Never replace Frankie manual selection with these tools or interpret without an explicit request. Draw calls have no seed or idempotency key; retain successful results and do not automatically retry uncertain draws. Do not present tarot as factual prediction, certainty, or probability. Card meanings are project-curated and field-level source attribution is not independently verified.",
   });
 
   server.registerTool("search_tarot_cards", {
@@ -35,7 +35,7 @@ export function createAgentMcpServer(apiOrigin = process.env.PUBLIC_API_BASE_URL
 
   server.registerTool("draw_tarot_spread", {
     title: "Draw a tarot spread",
-    description: "Draw one random card per position of a spread, from each position's card pool, never repeating a card. Cards carry no orientation; the caller decides upright or reversed. Pick spreadId from list_tarot_spreads.",
+    description: "Draw one random card per position of a spread, from each position's card pool, never repeating a card. Cards carry no orientation; the caller decides upright or reversed. Pick spreadId from list_tarot_spreads. Requires an explicit delegated-draw request; not used by Frankie manual selection. No seed or idempotency key: retries sample again. positionIndex is one-based.",
     inputSchema: { spreadId: z.enum(SPREAD_IDS as [string, ...string[]]), locale: localeSchema },
     outputSchema: z.object({ spread: z.any(), cards: z.array(z.any()), locale: z.enum(["en", "zh-CN"]) }),
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: false },
